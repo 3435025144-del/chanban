@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type Dispatch, type ReactNode } from 'react';
+import { getLowBarrierLine, getWorkoutLine } from '../data/avatarLines';
 import { findItem, milestones } from '../data/blindBoxItems';
+import { getWorkoutById, pickWorkout, type WorkoutPlan } from '../data/workouts';
 import type {
   AppState,
   AvatarConfig,
@@ -7,6 +9,8 @@ import type {
   DayLog,
   DrawResult,
   FoodRecord,
+  WorkoutDuration,
+  WorkoutGoal,
 } from '../types';
 import { daysBetween, shiftDate, todayKey } from '../utils/date';
 import { emptyDayLog, expToNext, initialState, loadState, STORAGE_KEY } from '../utils/constants';
@@ -16,6 +20,9 @@ type Action =
   | { type: 'ADD_RECORD'; record: FoodRecord }
   | { type: 'MARK_CHEAT'; date: string }
   | { type: 'EXERCISE' }
+  | { type: 'SET_COACH_CONFIG'; goal: WorkoutGoal; duration: WorkoutDuration; date: string }
+  | { type: 'WORKOUT_COMPLETE'; date: string }
+  | { type: 'WORKOUT_SKIP'; date: string }
   | { type: 'CRAVING'; result: 'resisted' | 'ate'; date: string }
   | { type: 'UPDATE_AVATAR'; patch: Partial<AvatarConfig> }
   | { type: 'EQUIP'; field: 'outfit' | 'hair' | 'accessory' | 'background' | 'action'; itemId: string }
@@ -61,6 +68,38 @@ function applyStreak(state: AppState, date: string): AppState {
   };
 }
 
+function missedWorkoutDays(state: AppState, date: string): number {
+  const status = state.coach.dailyStatus;
+  const keys = Object.keys(status).sort();
+  const earliest = keys[0] ?? state.coach.lastCompletedDate;
+  if (!earliest) return 0;
+  let cursor = shiftDate(date, -1);
+  let count = 0;
+  while (cursor >= earliest && status[cursor] !== 'completed' && count < 60) {
+    count += 1;
+    cursor = shiftDate(cursor, -1);
+  }
+  return count;
+}
+
+function withCoachPlan(state: AppState, date: string): AppState {
+  const coach = state.coach;
+  if (!coach.onboarded) return state;
+  const lowBarrier = missedWorkoutDays(state, date) >= 3;
+  const existing = coach.recommendations.find((r) => r.date === date);
+  if (existing && (!lowBarrier || getWorkoutById(existing.planId)?.duration === 5)) return state;
+
+  const recentIds = coach.recommendations
+    .filter((r) => r.date >= shiftDate(date, -2))
+    .map((r) => r.planId);
+  const plan: WorkoutPlan = pickWorkout(coach.goal, coach.duration, recentIds, date, lowBarrier);
+  const recommendations = [
+    ...coach.recommendations.filter((r) => r.date !== date),
+    { date, planId: plan.id },
+  ].slice(-30);
+  return { ...state, coach: { ...coach, recommendations } };
+}
+
 function reduce(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'OPEN_APP': {
@@ -77,7 +116,7 @@ function reduce(state: AppState, action: Action): AppState {
         avatar: addExp({ ...state.avatar, mood }, 5),
         blindBox: { ...state.blindBox, stars: state.blindBox.stars + 1 },
       };
-      return applyStreak(base, date);
+      return withCoachPlan(applyStreak(base, date), date);
     }
     case 'ADD_RECORD': {
       const logs = ensureLog(state, action.record.date);
@@ -119,6 +158,38 @@ function reduce(state: AppState, action: Action): AppState {
         avatar: addExp({ ...state.avatar, mood: '活力满满' }, 20),
         blindBox: { ...state.blindBox, stars: state.blindBox.stars + 2 },
       };
+    case 'SET_COACH_CONFIG': {
+      const coach = {
+        ...state.coach,
+        onboarded: true,
+        goal: action.goal,
+        duration: action.duration,
+        recommendations: state.coach.recommendations.filter((r) => r.date !== action.date),
+      };
+      return withCoachPlan({ ...state, coach }, action.date);
+    }
+    case 'WORKOUT_COMPLETE': {
+      const coach = {
+        ...state.coach,
+        dailyStatus: { ...state.coach.dailyStatus, [action.date]: 'completed' as const },
+        lastCompletedDate: action.date,
+      };
+      const base: AppState = {
+        ...state,
+        coach,
+        totalExercise: state.totalExercise + 1,
+        avatar: addExp({ ...state.avatar, mood: '活力满满' }, 20),
+        blindBox: { ...state.blindBox, stars: state.blindBox.stars + 2 },
+      };
+      return applyStreak(base, action.date);
+    }
+    case 'WORKOUT_SKIP': {
+      const coach = {
+        ...state.coach,
+        dailyStatus: { ...state.coach.dailyStatus, [action.date]: 'skipped' as const },
+      };
+      return { ...state, coach, avatar: { ...state.avatar, mood: '陪你一起' } };
+    }
     case 'CRAVING': {
       const logs = ensureLog(state, action.date);
       const day = logs[action.date];
@@ -213,6 +284,10 @@ interface AppContextValue {
   remaining: number;
   limitedUnlocked: boolean;
   ownedItemNames: string[];
+  todayWorkout: WorkoutPlan | null;
+  workoutLowBarrier: boolean;
+  workoutLine: string;
+  lowBarrierLine: string;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -232,6 +307,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const today = todayKey();
     const todayLog = state.logs[today] ?? emptyDayLog(today);
     const todayTotal = todayLog.records.reduce((sum, r) => sum + r.calories, 0);
+    const recommendedId = state.coach.recommendations.find((r) => r.date === today)?.planId;
+    const todayWorkout = recommendedId ? getWorkoutById(recommendedId) ?? null : null;
+    const workoutLowBarrier = !!todayWorkout && todayWorkout.duration === 5 && missedWorkoutDays(state, today) >= 3;
     return {
       state,
       dispatch,
@@ -240,6 +318,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       remaining: state.calorieGoal - todayTotal,
       limitedUnlocked: state.milestonesClaimed.length > 0,
       ownedItemNames: state.blindBox.ownedItems.map((id) => findItem(id)?.name ?? id),
+      todayWorkout,
+      workoutLowBarrier,
+      workoutLine: getWorkoutLine(state.avatar.equipped.personality),
+      lowBarrierLine: getLowBarrierLine(),
     };
   }, [state]);
 

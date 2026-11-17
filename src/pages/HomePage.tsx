@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
 import Avatar, { equippedLabel } from '../components/Avatar';
+import Modal from '../components/Modal';
 import { getAvatarLine, greetingLines } from '../data/avatarLines';
 import { fortunes } from '../data/fortune';
 import { ingredients } from '../data/ingredients';
 import { matchRecipes } from '../data/recipes';
 import { nearbyMerchants, takeoutGuides } from '../data/takeoutGuides';
+import { durationLabels, goalLabels } from '../data/workouts';
 import { useApp } from '../context/AppContext';
+import type { WorkoutDuration, WorkoutGoal } from '../types';
 import { formatDateCN, todayKey } from '../utils/date';
 
 type Mode = 'takeout' | 'cook' | 'nearby';
@@ -17,14 +20,17 @@ const modeTabs: { id: Mode; label: string; emoji: string }[] = [
 ];
 
 export default function HomePage() {
-  const { state } = useApp();
+  const { state, dispatch, todayWorkout, workoutLowBarrier, workoutLine, lowBarrierLine } = useApp();
   const [mode, setMode] = useState<Mode>('takeout');
+  const [coachGoal, setCoachGoal] = useState<WorkoutGoal>(state.coach.goal);
+  const [coachDuration, setCoachDuration] = useState<WorkoutDuration>(state.coach.duration);
   const [selected, setSelected] = useState<string[]>([]);
   const [openRecipe, setOpenRecipe] = useState<string | null>(null);
   const [fortuneIndex, setFortuneIndex] = useState(() => Math.floor(Math.random() * fortunes.length));
   const [greetingSeed, setGreetingSeed] = useState(() => Math.floor(Math.random() * greetingLines.length));
 
   const date = todayKey();
+  const todayStatus = state.coach.dailyStatus[date];
   const greeting = greetingLines[greetingSeed % greetingLines.length];
   const dailyLine = useMemo(
     () => getAvatarLine(state.avatar.equipped.personality),
@@ -180,6 +186,62 @@ export default function HomePage() {
           </section>
         )}
 
+        {state.coach.onboarded && todayWorkout && (
+          <section className="card space-y-3 border-coral/20">
+            <div className="flex gap-3 items-start">
+              <div className="w-16 h-16 rounded-2xl bg-peach grid place-items-center text-3xl shrink-0">
+                {todayWorkout.cover}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="section-title">今日教练</h2>
+                  <span className="text-[10px] bg-mintSoft text-mint px-2 py-0.5 rounded-full shrink-0">
+                    {durationLabels[todayWorkout.duration]}
+                  </span>
+                </div>
+                <p className="text-sm font-semibold mt-1">你的教练今天安排了：{todayWorkout.name}</p>
+                <p className="muted mt-0.5">
+                  {goalLabels[todayWorkout.goal]} · {todayWorkout.equipment} · {todayWorkout.description}
+                </p>
+              </div>
+            </div>
+
+            {workoutLowBarrier && (
+              <p className="text-xs text-ink/75 bg-mintSoft rounded-xl p-2.5 leading-relaxed">
+                🌱 {lowBarrierLine}今天为你换成了 5 分钟轻量方案。
+              </p>
+            )}
+
+            <p className="text-xs text-ink/75 italic">“{workoutLine}” —— {state.avatar.equipped.name}</p>
+
+            <details className="text-xs text-ink/70 bg-cream rounded-xl p-3">
+              <summary className="cursor-pointer text-coralDark">看看动作怎么做</summary>
+              <ol className="list-decimal list-inside mt-2 space-y-1">
+                {todayWorkout.steps.map((step, i) => <li key={i}>{step}</li>)}
+              </ol>
+            </details>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => dispatch({ type: 'WORKOUT_COMPLETE', date })}
+                disabled={todayStatus === 'completed'}
+                className="btn-primary text-xs disabled:opacity-50"
+              >
+                完成训练 · +2⭐
+              </button>
+              <button
+                onClick={() => dispatch({ type: 'WORKOUT_SKIP', date })}
+                disabled={todayStatus === 'skipped'}
+                className="btn-ghost text-xs disabled:opacity-50"
+              >
+                今天不想练
+              </button>
+            </div>
+            {todayStatus === 'completed' && <p className="text-[11px] text-mint text-center">今天已经完成啦，分身给你鼓掌 👏</p>}
+            {todayStatus === 'skipped' && <p className="text-[11px] text-muted text-center">记下啦，没关系，明天我们再见。</p>}
+          </section>
+        )}
+
         <section className="card bg-gradient-to-br from-[#FFF3E8] to-[#FFE7DC] border-0">
           <div className="flex items-start gap-3">
             <span className="text-3xl">{fortune.emoji}</span>
@@ -199,6 +261,47 @@ export default function HomePage() {
 
         <p className="text-center text-[11px] text-muted pb-2">“{dailyLine}” —— {state.avatar.equipped.name}</p>
       </main>
+
+      <Modal open={!state.coach.onboarded} onClose={() => {}} title="认识一下你的教练">
+        <div className="space-y-5">
+          <p className="text-sm text-ink/75">只想问两个小问题，答完就有今天的安排啦。</p>
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-ink/75">1. 你现在更想往哪个方向走？</p>
+            <div className="grid grid-cols-3 gap-2">
+              {(['fatLoss', 'toning', 'maintain'] as WorkoutGoal[]).map((goal) => (
+                <button
+                  key={goal}
+                  onClick={() => setCoachGoal(goal)}
+                  className={`rounded-xl py-2.5 text-xs border ${coachGoal === goal ? 'bg-coral text-white border-coral' : 'bg-white border-line'}`}
+                >
+                  {goalLabels[goal]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-ink/75">2. 每天大概能练多久？</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([5, 10, 20] as WorkoutDuration[]).map((duration) => (
+                <button
+                  key={duration}
+                  onClick={() => setCoachDuration(duration)}
+                  className={`rounded-xl py-2.5 text-xs border ${coachDuration === duration ? 'bg-coral text-white border-coral' : 'bg-white border-line'}`}
+                >
+                  {durationLabels[duration]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={() => dispatch({ type: 'SET_COACH_CONFIG', goal: coachGoal, duration: coachDuration, date })}
+            className="btn-primary w-full text-sm"
+          >
+            好啦，给我安排今天的训练
+          </button>
+          <p className="text-[10px] text-muted text-center">随时可以在「我的」里调整，也可以选择不练。</p>
+        </div>
+      </Modal>
     </div>
   );
 }

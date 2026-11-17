@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
-import type { Personality } from '../types';
+import { durationLabels, goalLabels } from '../data/workouts';
+import type { Personality, WorkoutDuration, WorkoutGoal } from '../types';
 import { todayKey } from '../utils/date';
 
 const personalityLabel: Record<Personality, string> = {
@@ -15,6 +16,8 @@ export default function ProfilePage() {
   const [goal, setGoal] = useState(String(state.calorieGoal));
   const [name, setName] = useState(state.avatar.equipped.name);
   const [personality, setPersonality] = useState<Personality>(state.avatar.equipped.personality);
+  const [coachGoal, setCoachGoal] = useState<WorkoutGoal>(state.coach.goal);
+  const [coachDuration, setCoachDuration] = useState<WorkoutDuration>(state.coach.duration);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -22,13 +25,16 @@ export default function ProfilePage() {
     setGoal(String(state.calorieGoal));
     setName(state.avatar.equipped.name);
     setPersonality(state.avatar.equipped.personality);
-  }, [state.calorieGoal, state.avatar.equipped.name, state.avatar.equipped.personality]);
+    setCoachGoal(state.coach.goal);
+    setCoachDuration(state.coach.duration);
+  }, [state.calorieGoal, state.avatar.equipped.name, state.avatar.equipped.personality, state.coach.goal, state.coach.duration]);
 
   const save = () => {
     const value = Number(goal);
     if (!value || value < 800) return;
     dispatch({ type: 'SET_GOAL', goal: value });
     dispatch({ type: 'UPDATE_AVATAR', patch: { name: name.trim() || '小馋', personality } });
+    dispatch({ type: 'SET_COACH_CONFIG', goal: coachGoal, duration: coachDuration, date: todayKey() });
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1800);
   };
@@ -80,6 +86,32 @@ export default function ProfilePage() {
               </button>
             ))}
           </div>
+        </div>
+        <div className="space-y-2 border-t border-line pt-3">
+          <p className="text-xs font-medium text-ink/75">今日教练设置</p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {(['fatLoss', 'toning', 'maintain'] as WorkoutGoal[]).map((g) => (
+              <button
+                key={g}
+                onClick={() => setCoachGoal(g)}
+                className={`rounded-xl py-2 text-[11px] border ${coachGoal === g ? 'bg-coral text-white border-coral' : 'bg-white border-line'}`}
+              >
+                {goalLabels[g]}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {([5, 10, 20] as WorkoutDuration[]).map((d) => (
+              <button
+                key={d}
+                onClick={() => setCoachDuration(d)}
+                className={`rounded-xl py-2 text-[11px] border ${coachDuration === d ? 'bg-coral text-white border-coral' : 'bg-white border-line'}`}
+              >
+                {durationLabels[d]}
+              </button>
+            ))}
+          </div>
+          <p className="muted">改完保存，明天的安排会按新目标来。</p>
         </div>
         <button onClick={save} className="btn-primary w-full text-sm">{saved ? '已保存 ✓' : '保存修改'}</button>
       </section>

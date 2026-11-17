@@ -38,6 +38,13 @@ export function initialState(): AppState {
     totalMealsLogged: 0,
     totalCravingsResisted: 0,
     totalExercise: 0,
+    coach: {
+      onboarded: false,
+      goal: 'fatLoss',
+      duration: 10,
+      dailyStatus: {},
+      recommendations: [],
+    },
   };
 }
 
@@ -61,6 +68,7 @@ export function loadState(): AppState {
       milestonesClaimed: parsed.milestonesClaimed ?? [],
       dailyRewardDates: parsed.dailyRewardDates ?? [],
       streakSevenRewarded: parsed.streakSevenRewarded ?? false,
+      coach: { ...base.coach, ...parsed.coach },
     };
   } catch {
     return initialState();

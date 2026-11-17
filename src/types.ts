@@ -1,6 +1,9 @@
 export type Personality = 'gentle' | 'sassy' | 'funny';
 export type BlindBoxPool = 'normal' | 'limited';
 export type BlindBoxItemType = 'outfit' | 'hair' | 'accessory' | 'background' | 'action';
+export type WorkoutGoal = 'fatLoss' | 'toning' | 'maintain';
+export type WorkoutDuration = 5 | 10 | 20;
+export type WorkoutStatus = 'completed' | 'skipped';
 
 export interface AvatarConfig {
   face: string;
@@ -48,6 +51,15 @@ export interface BlindBoxState {
   ownedItems: string[];
 }
 
+export interface CoachState {
+  onboarded: boolean;
+  goal: WorkoutGoal;
+  duration: WorkoutDuration;
+  dailyStatus: Record<string, WorkoutStatus>;
+  recommendations: { date: string; planId: string }[];
+  lastCompletedDate?: string;
+}
+
 export interface AppState {
   avatar: AvatarState;
   blindBox: BlindBoxState;
@@ -63,6 +75,7 @@ export interface AppState {
   totalMealsLogged: number;
   totalCravingsResisted: number;
   totalExercise: number;
+  coach: CoachState;
 }
 
 export interface RecognitionResult {

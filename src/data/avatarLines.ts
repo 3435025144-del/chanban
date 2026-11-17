@@ -60,6 +60,50 @@ export const greetingLines: string[] = [
   '嗨，我在等你分享今天的第一口好味道。',
 ];
 
+export const workoutLines: Record<Personality, string[]> = {
+  gentle: [
+    '今天我给你挑了一套轻轻的方案，舒服地动一动就好。',
+    '不用做到完美，跟着做完一小段就已经很棒了。',
+    '如果中间想停下来喝口水，我们随时可以。',
+    '身体今天想怎么动，我们就怎么来，慢慢找到节奏。',
+    '这套动作很温柔，做完记得夸夸自己。',
+    '好啦，换上舒服的衣服，我陪你一起开始。',
+  ],
+  sassy: [
+    '安排好了，别摆出一副要上战场的表情，就是动一动嘛。',
+    '这套不搞折磨人那套，做完你还愿意跟我聊天就行。',
+    '别小看这几分钟，认真起来还是挺有模有样的。',
+    '动作做不标准也没事，反正我又不在旁边打分。',
+    '去动一动吧，回来我还有一堆好吃的等你记。',
+    '好了好了，教练上线，抱怨的话先暂停三分钟。',
+  ],
+  funny: [
+    '登登！今日训练盲盒拆开啦，是这套！',
+    '我宣布：接下来这几分钟，客厅暂时归你表演。',
+    '这套动作很简单，简单到我都想跟着做两下。',
+    '做好准备，我们要开始把沙发变成健身器材了。',
+    '如果动作做得奇怪，别担心，那叫个人风格。',
+    '做完记得喘口气，我负责在旁边假装鼓掌。',
+  ],
+};
+
+export const lowBarrierLines: string[] = [
+  '今天我们只做一点点就好，先让身体醒过来。',
+  '这套只要 5 分钟，坐着开始也没关系。',
+  '不用着急，慢慢走几个动作就算数。',
+  '今天状态一般的话，我们就有多轻做多轻。',
+  '先把垫子铺好，剩下的交给这几分钟。',
+];
+
+export function getWorkoutLine(personality: Personality): string {
+  const list = workoutLines[personality];
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+export function getLowBarrierLine(): string {
+  return lowBarrierLines[Math.floor(Math.random() * lowBarrierLines.length)];
+}
+
 const pool: Record<Personality, string[]> = {
   gentle: gentleLines,
   sassy: sassyLines,
