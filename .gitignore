@@ -7,6 +7,8 @@ dist/
 *.log
 probe*.html
 ship.json
+ship-v*.json
 netlify-drop.json
 chanban-dist.zip
+chanban-dist-v*.zip
 cloudflared.exe
