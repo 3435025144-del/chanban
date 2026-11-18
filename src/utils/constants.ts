@@ -29,6 +29,9 @@ export function initialState(): AppState {
     blindBox: { stars: 3, fragments: 0, ownedItems: [] },
     logs: {},
     calorieGoal: 1500,
+    height: 165,
+    weightRecords: {},
+    waterByDate: {},
     photoTimeline: [],
     streakDays: 0,
     streakSevenRewarded: false,
@@ -37,14 +40,6 @@ export function initialState(): AppState {
     dailyRewardDates: [],
     totalMealsLogged: 0,
     totalCravingsResisted: 0,
-    totalExercise: 0,
-    coach: {
-      onboarded: false,
-      goal: 'fatLoss',
-      duration: 10,
-      dailyStatus: {},
-      recommendations: [],
-    },
   };
 }
 
@@ -68,7 +63,9 @@ export function loadState(): AppState {
       milestonesClaimed: parsed.milestonesClaimed ?? [],
       dailyRewardDates: parsed.dailyRewardDates ?? [],
       streakSevenRewarded: parsed.streakSevenRewarded ?? false,
-      coach: { ...base.coach, ...parsed.coach },
+      height: parsed.height ?? base.height,
+      weightRecords: parsed.weightRecords ?? {},
+      waterByDate: parsed.waterByDate ?? {},
     };
   } catch {
     return initialState();
