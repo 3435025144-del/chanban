@@ -12,3 +12,6 @@ netlify-drop.json
 chanban-dist.zip
 chanban-dist-v*.zip
 cloudflared.exe
+*.ps1
+*.mjs
+gh-api-check.txt
