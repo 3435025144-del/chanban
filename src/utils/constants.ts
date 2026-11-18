@@ -6,7 +6,7 @@ export const DEFAULT_EQUIPPED = {
   face: 'round',
   hair: 'bob',
   skin: 'warm',
-  outfit: 'teeCoral',
+  outfit: 'hoodie',
   accessory: 'none',
   name: '小馋',
   personality: 'gentle' as const,
@@ -40,6 +40,7 @@ export function initialState(): AppState {
     dailyRewardDates: [],
     totalMealsLogged: 0,
     totalCravingsResisted: 0,
+    appearanceVersion: 2,
   };
 }
 
@@ -53,10 +54,16 @@ export function loadState(): AppState {
     if (!raw) return initialState();
     const parsed = JSON.parse(raw) as Partial<AppState>;
     const base = initialState();
+    const version = parsed.appearanceVersion ?? 1;
+    const equipped = { ...base.avatar.equipped, ...parsed.avatar?.equipped };
+    if (version < 2) {
+      equipped.hair = 'bob';
+      equipped.outfit = 'hoodie';
+    }
     return {
       ...base,
       ...parsed,
-      avatar: { ...base.avatar, ...parsed.avatar, equipped: { ...base.avatar.equipped, ...parsed.avatar?.equipped } },
+      avatar: { ...base.avatar, ...parsed.avatar, equipped },
       blindBox: { ...base.blindBox, ...parsed.blindBox },
       logs: parsed.logs ?? {},
       photoTimeline: parsed.photoTimeline ?? [],
@@ -66,6 +73,7 @@ export function loadState(): AppState {
       height: parsed.height ?? base.height,
       weightRecords: parsed.weightRecords ?? {},
       waterByDate: parsed.waterByDate ?? {},
+      appearanceVersion: 2,
     };
   } catch {
     return initialState();
