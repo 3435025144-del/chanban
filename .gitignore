@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+
+# 本地验证产生的临时文件
+*.log
+probe*.html
+ship.json
+ship-v*.json
+netlify-drop.json
+chanban-dist.zip
+chanban-dist-v*.zip
+cloudflared.exe
