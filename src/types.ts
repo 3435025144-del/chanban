@@ -1,9 +1,7 @@
 export type Personality = 'gentle' | 'sassy' | 'funny';
 export type BlindBoxPool = 'normal' | 'limited';
 export type BlindBoxItemType = 'outfit' | 'hair' | 'accessory' | 'background' | 'action';
-export type WorkoutGoal = 'fatLoss' | 'toning' | 'maintain';
-export type WorkoutDuration = 5 | 10 | 20;
-export type WorkoutStatus = 'completed' | 'skipped';
+export type MealType = 'breakfast' | 'lunch' | 'dinner';
 
 export interface AvatarConfig {
   face: string;
@@ -26,6 +24,7 @@ export interface FoodRecord {
   carbs?: number;
   fat?: number;
   source: 'photo' | 'manual';
+  mealType?: MealType;
   feedback?: string;
   honestStar?: boolean;
 }
@@ -51,31 +50,22 @@ export interface BlindBoxState {
   ownedItems: string[];
 }
 
-export interface CoachState {
-  onboarded: boolean;
-  goal: WorkoutGoal;
-  duration: WorkoutDuration;
-  dailyStatus: Record<string, WorkoutStatus>;
-  recommendations: { date: string; planId: string }[];
-  lastCompletedDate?: string;
-}
-
 export interface AppState {
   avatar: AvatarState;
   blindBox: BlindBoxState;
   logs: Record<string, DayLog>;
   calorieGoal: number;
+  height: number;
+  weightRecords: Record<string, number>;
+  waterByDate: Record<string, number>;
   photoTimeline: { date: string; imageDataUrl: string }[];
   streakDays: number;
   streakSevenRewarded: boolean;
   lastOpenDate: string;
   milestonesClaimed: string[];
-  /** 以下为原型需要补充的统计字段 */
   dailyRewardDates: string[];
   totalMealsLogged: number;
   totalCravingsResisted: number;
-  totalExercise: number;
-  coach: CoachState;
 }
 
 export interface RecognitionResult {
