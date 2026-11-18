@@ -4,8 +4,8 @@
 
 :root {
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
-  color: #3b302c;
-  background: #efe6df;
+  color: #20240F;
+  background: #F8F8EB;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -17,6 +17,7 @@ body {
   margin: 0;
   display: flex;
   justify-content: center;
+  background: #E9EADF;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -24,16 +25,19 @@ body {
 
 @layer components {
   .card {
-    @apply rounded-2xl bg-white shadow-card border border-line/70 p-4;
+    @apply rounded-3xl bg-white shadow-card p-4;
   }
   .chip {
-    @apply px-3 py-1.5 rounded-full text-sm border transition-colors;
+    @apply px-3 py-1.5 rounded-full text-sm transition-colors;
   }
   .btn-primary {
-    @apply bg-coral text-white rounded-full px-5 py-2.5 font-medium active:scale-[0.98] transition-transform shadow-pop;
+    @apply bg-avocado text-white rounded-full px-5 py-2.5 font-medium active:scale-[0.98] transition-transform shadow-pop;
+  }
+  .btn-coral {
+    @apply bg-coral text-white rounded-full px-5 py-2.5 font-medium active:scale-[0.98] transition-transform;
   }
   .btn-ghost {
-    @apply bg-white text-coralDark border border-coral/30 rounded-full px-4 py-2 text-sm active:scale-[0.98] transition-transform;
+    @apply bg-white text-avocadoDark rounded-full px-4 py-2 text-sm active:scale-[0.98] transition-transform;
   }
   .section-title {
     @apply text-[15px] font-semibold text-ink;
@@ -45,7 +49,7 @@ body {
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-6px); }
 }
 .animate-float { animation: float 3.2s ease-in-out infinite; }
 
