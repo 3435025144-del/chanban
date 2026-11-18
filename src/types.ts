@@ -66,6 +66,7 @@ export interface AppState {
   dailyRewardDates: string[];
   totalMealsLogged: number;
   totalCravingsResisted: number;
+  appearanceVersion?: number;
 }
 
 export interface RecognitionResult {
