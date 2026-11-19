@@ -32,10 +32,14 @@ function mondayOf(date: string): Date {
   return d;
 }
 
+function keyOf(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export default function RecordPage() {
   const {
-    state, dispatch, todayLog, todayTotal, todayWaterMl, todayWaterCount, todayStars,
-    todaySteps, activeCalories, expectedDeficit, remaining, notify,
+    state, dispatch, todayLog, todayTotal, todayWaterMl, todayWaterCount, todayStars, todayEarned,
+    todaySteps, activeCalories, expectedDeficit, remaining, notify, showGuide, guideSeen,
   } = useApp();
   const today = todayKey();
   const location = useLocation();
@@ -50,7 +54,10 @@ export default function RecordPage() {
   const [editing, setEditing] = useState<EditState | null>(null);
   const [editForm, setEditForm] = useState({ name: '', calories: '', amount: '1', meal: 'lunch' as MealType, time: '' });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dayDetailOpen, setDayDetailOpen] = useState(false);
+  const [monthOpen, setMonthOpen] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [undoWaterVisible, setUndoWaterVisible] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
   const [cupOpen, setCupOpen] = useState(false);
   const [cupLabel, setCupLabel] = useState(state.waterCup.label);
@@ -58,6 +65,9 @@ export default function RecordPage() {
   const [cupColor, setCupColor] = useState(state.waterCup.color);
   const photoInput = useRef<HTMLInputElement>(null);
   const timelineInput = useRef<HTMLInputElement>(null);
+  const undoTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(undoTimer.current), []);
 
   useEffect(() => {
     const navState = location.state as { focus?: string } | null;
@@ -67,7 +77,7 @@ export default function RecordPage() {
   const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + i);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const key = keyOf(d);
     return { key, day: d.getDate(), weekday: weekNames[i] };
   }), [weekStart]);
 
@@ -79,12 +89,14 @@ export default function RecordPage() {
   }, [weekDates, state.logs, state.calorieGoal]);
 
   const viewDate = useMemo(() => {
-    const d = new Date(`${today}T00:00:00`);
-    d.setMonth(d.getMonth() + monthOffset, 1);
+    const d = new Date(weekStart);
+    d.setDate(1);
+    d.setMonth(d.getMonth() + monthOffset);
     return d;
-  }, [monthOffset, today]);
+  }, [monthOffset, weekStart]);
   const cells = useMemo(() => monthCells(viewDate.getFullYear(), viewDate.getMonth()), [viewDate]);
   const selectedLog = selectedDate ? state.logs[selectedDate] : undefined;
+  const selectedTotal = selectedLog?.records.reduce((sum, record) => sum + record.calories, 0) ?? 0;
 
   const grouped = useMemo(() => {
     const map = Object.fromEntries(mainMeals.map((meal) => [meal, [] as FoodRecord[]])) as Record<MealType, FoodRecord[]>;
@@ -123,6 +135,7 @@ export default function RecordPage() {
       feedback: result.feedback, honestStar: isLikelyCheat(result),
     } });
     notify('照片里的这一餐记好啦'); setPhotoPreview(null); setResult(null);
+    if (!guideSeen) showGuide();
   };
 
   const saveManual = () => {
@@ -135,6 +148,7 @@ export default function RecordPage() {
     } });
     notify('记下来啦，收到一颗星');
     setForm({ name: '', calories: '', amount: '1', honest: false }); setManualMeal(null);
+    if (!guideSeen) showGuide();
   };
 
   const openEditor = (date: string, record: FoodRecord) => {
@@ -156,7 +170,29 @@ export default function RecordPage() {
     notify('这条记录已删除'); setEditing(null);
   };
 
-  const addWater = () => { dispatch({ type: 'ADD_WATER', date: today }); notify(`记下一杯 ${state.waterCup.capacity}ml`); };
+  const addWater = () => {
+    dispatch({ type: 'ADD_WATER', date: today });
+    notify(`记下一杯 ${state.waterCup.capacity}ml`);
+    setUndoWaterVisible(true);
+    window.clearTimeout(undoTimer.current);
+    undoTimer.current = window.setTimeout(() => setUndoWaterVisible(false), 3000);
+  };
+  const undoWater = () => {
+    if (todayWaterCount === 0) return;
+    dispatch({ type: 'UNDO_WATER', date: today });
+    setUndoWaterVisible(false);
+    window.clearTimeout(undoTimer.current);
+    notify('撤销了这一杯水');
+  };
+  const openMonth = (offset: number) => {
+    setMonthOffset(offset);
+    setMonthOpen(true);
+  };
+  const chooseMonthDay = (key: string) => {
+    setWeekStart(mondayOf(key));
+    setSelectedDate(key);
+    setMonthOpen(false);
+  };
   const openCup = () => { setCupLabel(state.waterCup.label); setCupCapacity(String(state.waterCup.capacity)); setCupColor(state.waterCup.color); setCupOpen(true); };
   const saveCup = () => {
     const capacity = Number(cupCapacity);
@@ -175,22 +211,22 @@ export default function RecordPage() {
   };
 
   return (
-    <div className="space-y-4 px-4 pb-8 pt-6">
+    <div className="space-y-4 px-4 pb-32 pt-6">
       <header className="flex items-start justify-between gap-3">
         <div>
           <p className="muted">记录与回看，都在这里</p>
           <h1 className="mt-1 text-[28px] font-bold leading-tight text-ink">今天记下来啦</h1>
         </div>
-        <span className="chip shrink-0 bg-coralSoft text-xs font-medium text-coralDeep"><Icon name="star" size={13} className="mr-1 inline" />今日 +{todayStars} 星</span>
+        <span className="chip shrink-0 bg-coralSoft text-xs font-medium text-coralDeep"><Icon name="star" size={13} className="mr-1 inline" />今日 +{todayStars} 星 · {todayEarned}/5</span>
       </header>
 
       <section className="card space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-ink">{weekStart.getFullYear()}年 {weekStart.getMonth() + 1}月</span>
+          <button onClick={() => openMonth(0)} className="text-sm font-semibold text-ink underline decoration-avocado/40 underline-offset-4">{weekStart.getFullYear()}年 {weekStart.getMonth() + 1}月</button>
           <div className="flex items-center gap-1">
-            <button onClick={() => setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; })} className="icon-btn h-8 w-8" aria-label="上一周"><Icon name="chevronLeft" size={16} /></button>
-            <button onClick={() => setWeekStart(mondayOf(today))} className="chip bg-warm px-2.5 py-1.5 text-[11px] text-ink">本周</button>
-            <button onClick={() => setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; })} className="icon-btn h-8 w-8" aria-label="下一周"><Icon name="chevronRight" size={16} /></button>
+            <button onClick={() => openMonth(-1)} className="icon-btn h-8 w-8" aria-label="上个月"><Icon name="chevronLeft" size={16} /></button>
+            <button onClick={() => { setWeekStart(mondayOf(today)); setSelectedDate(null); }} className="chip bg-warm px-2.5 py-1.5 text-[11px] text-ink">本周</button>
+            <button onClick={() => openMonth(1)} className="icon-btn h-8 w-8" aria-label="下个月"><Icon name="chevronRight" size={16} /></button>
           </div>
         </div>
         <div className="grid grid-cols-7 gap-1">
@@ -211,6 +247,15 @@ export default function RecordPage() {
           <span className="muted">本周平均热量差 · 已完整记录 {weekStats.perfect} 天</span>
           <span className="text-sm font-bold text-avocado">{weekStats.avg} kcal</span>
         </div>
+        {selectedDate && (
+          <div className="flex items-center justify-between rounded-2xl bg-avocadoSoft px-3 py-2.5">
+            <span className="text-xs text-ink/80">{formatDateCN(selectedDate)} · {selectedLog?.records.length ?? 0} 餐 · {selectedTotal} kcal</span>
+            <span className="flex items-center gap-2">
+              <button onClick={() => setDayDetailOpen(true)} className="text-xs font-medium text-avocado">查看</button>
+              <button onClick={() => setSelectedDate(null)} className="muted">收起</button>
+            </span>
+          </div>
+        )}
       </section>
 
       <div className="grid grid-cols-3 gap-2">
@@ -228,6 +273,9 @@ export default function RecordPage() {
             <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-waterInk"><Icon name="cup" size={18} /></span>
             <span><span className="block text-sm font-semibold text-ink">喝水</span><span className="muted">{todayWaterMl}/{state.waterGoal} ml</span></span>
           </button>
+          {undoWaterVisible && (
+            <button onClick={undoWater} className="absolute bottom-2 right-2 rounded-full bg-white px-2 py-1 text-[10px] font-medium text-waterInk shadow-card active:scale-95">撤销</button>
+          )}
         </div>
       </div>
 
@@ -286,22 +334,10 @@ export default function RecordPage() {
 
       <section className="card space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="section-title">小日历</h2>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setMonthOffset((m) => m - 1)} className="icon-btn h-8 w-8" aria-label="上个月"><Icon name="chevronLeft" size={16} /></button>
-            <span className="text-xs text-ink">{viewDate.getFullYear()}年{viewDate.getMonth() + 1}月</span>
-            <button onClick={() => setMonthOffset((m) => m + 1)} className="icon-btn h-8 w-8" aria-label="下个月"><Icon name="chevronRight" size={16} /></button>
-          </div>
+          <h2 className="section-title">照片小记</h2>
+          <span className="muted">只留给自己看</span>
         </div>
-        <div className="grid grid-cols-7 gap-1">
-          {cells.map((cell, i) => cell.key ? (
-            <button key={cell.key} onClick={() => setSelectedDate(cell.key)} className={`flex aspect-square flex-col items-center justify-center rounded-2xl text-[11px] ${cell.key === today ? 'bg-avocado text-white' : 'bg-warm text-ink'}`}><span>{cell.day}</span><span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-avocado" /></button>
-          ) : <div key={`blank-${i}`} />)}
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="muted">照片只留给自己看</span>
-          <button onClick={() => timelineInput.current?.click()} className="text-xs text-avocado">添加照片</button>
-        </div>
+        <button onClick={() => timelineInput.current?.click()} className="btn-secondary w-full text-xs">添加一张照片</button>
         {state.photoTimeline.length > 0 && <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{state.photoTimeline.map((photo, i) => <img key={`${photo.date}-${i}`} src={photo.imageDataUrl} alt={formatDateCN(photo.date, false)} className="h-16 w-16 shrink-0 rounded-2xl object-cover" />)}</div>}
         {pendingPhoto && <div className="space-y-2"><img src={pendingPhoto} alt="待保存" className="h-36 w-full rounded-2xl object-cover" /><button onClick={() => { dispatch({ type: 'ADD_PHOTO', photo: { date: today, imageDataUrl: pendingPhoto } }); setPendingPhoto(null); notify('照片收好啦'); }} className="btn-primary w-full text-xs">保存照片</button></div>}
       </section>
@@ -344,8 +380,32 @@ export default function RecordPage() {
         </div>}
       </Modal>
 
-      <Modal open={!!selectedDate} onClose={() => setSelectedDate(null)} title={selectedDate ? formatDateCN(selectedDate) : ''}>
-        {selectedLog ? <div className="space-y-2">{selectedLog.records.map((record) => <button key={record.id} onClick={() => { setSelectedDate(null); openEditor(selectedDate!, record); }} className="flex w-full items-center justify-between rounded-2xl bg-warm px-3 py-2.5 text-left text-xs"><span className="truncate text-ink">{record.name}</span><span className="font-medium text-ink">{record.calories} kcal</span></button>)}</div> : <p className="text-sm text-muted">这一天还空空的，随时可以补记。</p>}
+      <Modal open={monthOpen} onClose={() => setMonthOpen(false)} title={`${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月`}>
+        <div className="max-h-[58vh] space-y-3 overflow-y-auto no-scrollbar">
+          <div className="flex items-center justify-between">
+            <button onClick={() => setMonthOffset((m) => m - 1)} className="icon-btn h-8 w-8" aria-label="上个月"><Icon name="chevronLeft" size={16} /></button>
+            <span className="text-sm font-semibold text-ink">{viewDate.getFullYear()}年 {viewDate.getMonth() + 1}月</span>
+            <button onClick={() => setMonthOffset((m) => m + 1)} className="icon-btn h-8 w-8" aria-label="下个月"><Icon name="chevronRight" size={16} /></button>
+          </div>
+          <div className="grid grid-cols-7 text-center text-[10px] text-muted">{weekNames.map((name) => <span key={name}>{name}</span>)}</div>
+          <div className="grid grid-cols-7 gap-1">
+            {cells.map((cell, i) => {
+              const key = cell.key;
+              const total = key ? state.logs[key]?.records.reduce((sum, record) => sum + record.calories, 0) ?? 0 : 0;
+              return key ? (
+                <button key={key} onClick={() => chooseMonthDay(key)} className={`flex aspect-square flex-col items-center justify-center rounded-2xl text-[11px] ${key === today ? 'bg-avocado text-white' : 'bg-warm text-ink'}`}>
+                  <span>{cell.day}</span>
+                  <span className="mt-0.5 text-[8px] opacity-75">{total ? `${total}` : ''}</span>
+                </button>
+              ) : <div key={`blank-${i}`} />;
+            })}
+          </div>
+          <p className="muted text-center">点某一天回到周历，查看当天记录</p>
+        </div>
+      </Modal>
+
+      <Modal open={dayDetailOpen && !!selectedDate} onClose={() => setDayDetailOpen(false)} title={selectedDate ? formatDateCN(selectedDate) : ''}>
+        {selectedLog ? <div className="space-y-2">{selectedLog.records.map((record) => <button key={record.id} onClick={() => { setDayDetailOpen(false); setSelectedDate(null); openEditor(selectedDate!, record); }} className="flex w-full items-center justify-between rounded-2xl bg-warm px-3 py-2.5 text-left text-xs"><span className="truncate text-ink">{record.name}</span><span className="font-medium text-ink">{record.calories} kcal</span></button>)}</div> : <p className="text-sm text-muted">这一天还空空的，随时可以补记。</p>}
       </Modal>
 
       <Modal open={cupOpen} onClose={() => setCupOpen(false)} title="自定义水杯">
