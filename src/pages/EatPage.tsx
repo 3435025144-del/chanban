@@ -57,7 +57,7 @@ interface InfoCardProps {
 
 function InfoCard({ emoji, name, calories, iconClass, recommendLabel, recommendText, avoidLabel, avoidText, onClick }: InfoCardProps) {
   return (
-    <button type="button" onClick={onClick} className="card w-full rounded-[22px] text-left transition-transform active:scale-[0.99]">
+    <button type="button" onClick={onClick} className="card tap-bounce w-full rounded-[22px] text-left">
       <div className="flex items-center gap-3">
         <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-xl ${iconClass}`}>{emoji}</span>
         <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-text">{name}</span>
@@ -245,7 +245,7 @@ export default function EatPage() {
           <button
             key={chip}
             onClick={() => toggleChip(chip)}
-            className={`chip inline-flex shrink-0 items-center gap-1 text-xs ${activeChips.includes(chip) ? 'bg-primary text-primaryText shadow-card' : 'bg-surface text-textMuted'}`}
+            className={`chip tap-bounce inline-flex shrink-0 items-center gap-1 text-xs ${activeChips.includes(chip) ? 'bg-primary text-primaryText shadow-card' : 'bg-surface text-textMuted'}`}
           >
             {activeChips.includes(chip) && <Icon name="check" size={12} strokeWidth={2.2} />}
             {chip}
@@ -292,7 +292,7 @@ export default function EatPage() {
             <button
               key={item.id}
               onClick={() => setMode(mode === item.id ? 'recommend' : item.id)}
-              className={`card flex flex-col items-start gap-3 py-4 text-left active:scale-[0.98] ${mode === item.id ? 'ring-2 ring-primary' : ''}`}
+              className={`card tap-bounce flex flex-col items-start gap-3 py-4 text-left ${mode === item.id ? 'ring-2 ring-primary' : ''}`}
             >
               <span className={`grid h-9 w-9 place-items-center rounded-2xl ${item.id === 'takeout' ? 'bg-greenSoft text-primary' : item.id === 'cook' ? 'bg-peachSoft text-peachStrong' : 'bg-cyanSoft text-cyanText'}`}>
                 <Icon name={item.icon} size={19} />
@@ -326,7 +326,7 @@ export default function EatPage() {
             <>
               <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
                 {['全部', ...Array.from(new Set(takeoutGuides.map((g) => g.category)))].map((category) => (
-                  <button key={category} onClick={() => setTakeoutCategory(category)} className={`chip shrink-0 text-xs ${takeoutCategory === category ? 'bg-primary text-primaryText' : 'bg-surface text-textMuted'}`}>{category}</button>
+                  <button key={category} onClick={() => setTakeoutCategory(category)} className={`filter-chip shrink-0 ${takeoutCategory === category ? 'bg-primary text-primaryText' : 'bg-surface text-text'}`}>{category}</button>
                 ))}
               </div>
               <div className="flex items-center justify-between">
@@ -358,7 +358,7 @@ export default function EatPage() {
             <>
               <div className="flex flex-wrap gap-2">
                 {ingredients.map((item) => (
-                  <button key={item.id} onClick={() => setSelectedIngredients((prev) => prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id])} className={`chip text-xs ${selectedIngredients.includes(item.id) ? 'bg-primary text-primaryText' : 'bg-surface text-textMuted'}`}>{item.emoji} {item.name}</button>
+                  <button key={item.id} onClick={() => setSelectedIngredients((prev) => prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id])} className={`filter-chip ${selectedIngredients.includes(item.id) ? 'bg-primary text-primaryText' : 'bg-surface text-text'}`}>{item.emoji} {item.name}</button>
                 ))}
               </div>
               <div className="flex items-center justify-between">
@@ -390,7 +390,7 @@ export default function EatPage() {
             <>
               <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
                 {['全部', ...Array.from(new Set(nearbyMerchants.map((m) => m.category)))].map((category) => (
-                  <button key={category} onClick={() => setNearbyCategory(category)} className={`chip shrink-0 text-xs ${nearbyCategory === category ? 'bg-primary text-primaryText' : 'bg-surface text-textMuted'}`}>{category}</button>
+                  <button key={category} onClick={() => setNearbyCategory(category)} className={`filter-chip shrink-0 ${nearbyCategory === category ? 'bg-primary text-primaryText' : 'bg-surface text-text'}`}>{category}</button>
                 ))}
               </div>
               <div className="flex items-center justify-between">
