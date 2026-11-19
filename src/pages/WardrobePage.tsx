@@ -62,11 +62,11 @@ export default function WardrobePage() {
     <div className="flex min-h-screen flex-col px-4 pb-28 pt-6">
       <SubPageHeader title="衣帽间" subtitle="点一下就能试穿" backTo="/avatar" />
 
-      <section className="flex min-h-[320px] flex-col items-center justify-center rounded-[24px] bg-white py-4 shadow-card">
-        <div className="rounded-[20px] bg-warm p-2">
+      <section className="flex min-h-[320px] flex-col items-center justify-center rounded-[24px] bg-card py-4 shadow-card">
+        <div className="rounded-[20px] bg-surface p-2">
           <Avatar config={draft} size={230} className="animate-idle" />
         </div>
-        <p className="mt-3 text-sm font-medium text-ink">{state.avatar.equipped.name} · 试穿中</p>
+        <p className="mt-3 text-sm font-medium text-text">{state.avatar.equipped.name} · 试穿中</p>
       </section>
 
       <section className="mt-4 space-y-3">
@@ -75,7 +75,7 @@ export default function WardrobePage() {
             <button
               key={item.id}
               onClick={() => setCategory(item.id)}
-              className={`chip shrink-0 text-xs ${category === item.id ? 'bg-avocado text-white shadow-card' : 'bg-warm text-muted'}`}
+              className={`chip shrink-0 text-xs ${category === item.id ? 'bg-primary text-primaryText shadow-card' : 'bg-surface text-textMuted'}`}
             >
               {item.label}
             </button>
@@ -91,12 +91,12 @@ export default function WardrobePage() {
                 key={item.id}
                 onClick={() => tryOn(item.id)}
                 className={`relative flex flex-col items-center gap-2 rounded-[20px] p-3 shadow-card transition-all active:scale-95 ${
-                  equipped ? 'ring-2 ring-avocado bg-avocadoSoft' : unlocked ? 'bg-white' : 'bg-warm opacity-50'
+                  equipped ? 'ring-2 ring-primary bg-greenSoft' : unlocked ? 'bg-card' : 'bg-surface opacity-50'
                 }`}
               >
-                {equipped && <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-avocado text-white"><Icon name="check" size={12} /></span>}
-                <span className={`grid h-14 w-14 place-items-center rounded-2xl text-2xl ${unlocked ? 'bg-warm' : 'bg-line grayscale'}`}>{item.emoji}</span>
-                <span className="w-full truncate text-center text-xs font-medium text-ink">{unlocked ? item.name : '未解锁'}</span>
+                {equipped && <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-primary text-primaryText"><Icon name="check" size={12} /></span>}
+                <span className={`grid h-14 w-14 place-items-center rounded-2xl text-2xl ${unlocked ? 'bg-surface' : 'bg-border grayscale'}`}>{item.emoji}</span>
+                <span className="w-full truncate text-center text-xs font-medium text-text">{unlocked ? item.name : '未解锁'}</span>
                 <span className="muted">{unlocked ? (equipped ? '穿戴中' : '点击试穿') : '星星盒可得'}</span>
               </button>
             );
