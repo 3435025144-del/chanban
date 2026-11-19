@@ -27,7 +27,7 @@ export default function DrawResultPage() {
       ) : (
         <>
           <section className="card-important space-y-4 text-center">
-            <div className="mx-auto grid h-24 w-24 place-items-center rounded-[28px] bg-coralSoft text-coralInk animate-pop-in">
+            <div className="mx-auto grid h-24 w-24 place-items-center rounded-[28px] bg-coralSoft text-coralDeep animate-pop-in">
               <Icon name="gift" size={46} />
             </div>
             <div>
@@ -45,7 +45,7 @@ export default function DrawResultPage() {
                     <p className="mt-3 text-base font-semibold text-ink">{meta.name}</p>
                     <p className="muted mt-1">{typeLabel(meta.type)} · {rarityLabel[meta.rarity]} · {meta.series}</p>
                     <p className="mt-2 text-xs leading-relaxed text-ink/75">{meta.desc}</p>
-                    <p className={`mt-3 text-xs font-medium ${result.isDuplicate ? 'text-coralInk' : 'text-avocadoInk'}`}>
+                    <p className={`mt-3 text-xs font-medium ${result.isDuplicate ? 'text-coralDeep' : 'text-avocado'}`}>
                       {result.isDuplicate ? '重复款变成 1 个碎片，离想要的更近了' : '新朋友加入衣柜！'}
                     </p>
                   </div>
@@ -60,7 +60,7 @@ export default function DrawResultPage() {
                     <div key={`${result.itemId}-${i}`} className={`rounded-2xl p-2.5 ${isNew ? 'bg-avocadoSoft' : 'bg-warm'}`}>
                       <div className="flex items-center justify-between">
                         <span className="grid h-9 w-9 place-items-center rounded-xl bg-white text-lg">{meta.emoji}</span>
-                        <span className={`text-[10px] ${result.isDuplicate ? 'text-coralInk' : 'text-avocadoInk'}`}>
+                        <span className={`text-[10px] ${result.isDuplicate ? 'text-coralDeep' : 'text-avocado'}`}>
                           {result.isDuplicate ? '碎片 +1' : '新款'}
                         </span>
                       </div>
@@ -81,7 +81,7 @@ export default function DrawResultPage() {
               <Link to="/wardrobe" className="btn-primary text-center">去衣橱试穿</Link>
               <Link to="/avatar" className="btn-secondary text-center">回分身小屋</Link>
             </div>
-            <Link to="/star-box" className="block text-center text-xs text-avocadoInk underline">再开一盒</Link>
+            <Link to="/star-box" className="block text-center text-xs text-avocado underline">再开一盒</Link>
           </section>
         </>
       )}
