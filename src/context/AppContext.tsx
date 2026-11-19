@@ -21,6 +21,7 @@ import type {
   FoodRecord,
   MoodLog,
   ReminderSettings,
+  ReminderTimes,
   TasteProfile,
   WaterCup,
 } from '../types';
@@ -54,6 +55,8 @@ type Action =
   | { type: 'SAVE_LOOK'; look: FavoriteLook }
   | { type: 'TOGGLE_FAVORITE_LOOK'; id: string; config?: AvatarConfig }
   | { type: 'SET_REMINDERS'; patch: Partial<ReminderSettings> }
+  | { type: 'SET_REMINDER_TIMES'; times: ReminderTimes }
+  | { type: 'SET_GUIDE_SEEN' }
   | { type: 'SET_TASTE_PROFILE'; patch: Partial<TasteProfile> }
   | { type: 'SET_MOOD'; date: string; mood: string; note?: string }
   | { type: 'CLEAR_DATA' };
@@ -64,11 +67,16 @@ function makeId(prefix: string): string {
 
 function earn(state: AppState, date: string, amount: number, reason: string): AppState {
   if (amount <= 0) return state;
+  const earnedToday = state.dailyEarnedByDate[date] ?? 0;
+  const dailyLimit = 5;
+  if (earnedToday >= dailyLimit) return state;
+  const granted = Math.min(amount, dailyLimit - earnedToday);
   return {
     ...state,
-    blindBox: { ...state.blindBox, stars: state.blindBox.stars + amount },
+    blindBox: { ...state.blindBox, stars: state.blindBox.stars + granted },
+    dailyEarnedByDate: { ...state.dailyEarnedByDate, [date]: earnedToday + granted },
     starLedger: [
-      { id: makeId('star'), date, amount, reason },
+      { id: makeId('star'), date, amount: granted, reason },
       ...state.starLedger,
     ].slice(0, 300),
   };
@@ -380,6 +388,10 @@ function reduce(state: AppState, action: Action): AppState {
     }
     case 'SET_REMINDERS':
       return { ...state, reminders: { ...state.reminders, ...action.patch } };
+    case 'SET_REMINDER_TIMES':
+      return { ...state, reminderTimes: action.times };
+    case 'SET_GUIDE_SEEN':
+      return { ...state, guideSeen: true };
     case 'SET_TASTE_PROFILE':
       return { ...state, tasteProfile: { ...state.tasteProfile, ...action.patch } };
     case 'SET_MOOD': {
@@ -406,6 +418,7 @@ interface AppContextValue {
   todayWaterMl: number;
   todayWaterCount: number;
   todayStars: number;
+  todayEarned: number;
   todaySpend: number;
   todayMeals: number;
   todaySteps: number;
@@ -419,6 +432,10 @@ interface AppContextValue {
   hasUnseenReward: boolean;
   notice: string;
   notify: (message: string) => void;
+  guideSeen: boolean;
+  guideVisible: boolean;
+  showGuide: () => void;
+  dismissGuide: () => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -426,6 +443,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reduce, undefined, loadState);
   const [notice, setNotice] = useState('');
+  const [guideVisible, setGuideVisible] = useState(false);
   const noticeTimer = useRef<number | undefined>(undefined);
 
   const notify = useCallback((message: string) => {
@@ -435,6 +453,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
+
+  const showGuide = useCallback(() => setGuideVisible(true), []);
+  const dismissGuide = useCallback(() => {
+    dispatch({ type: 'SET_GUIDE_SEEN' });
+    setGuideVisible(false);
+  }, []);
+
+  useEffect(() => {
+    if (state.guideSeen) return;
+    const timer = window.setTimeout(() => setGuideVisible(true), 900);
+    return () => window.clearTimeout(timer);
+  }, [state.guideSeen]);
 
   useEffect(() => {
     try {
@@ -465,6 +495,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       todayWaterMl: todayWaterLogs.reduce((sum, log) => sum + log.amount, 0),
       todayWaterCount: todayWaterLogs.length,
       todayStars: state.starLedger.filter((entry) => entry.date === today).reduce((sum, entry) => sum + entry.amount, 0),
+      todayEarned: state.dailyEarnedByDate[today] ?? 0,
       todaySpend: todayLog.records.reduce((sum, r) => sum + (r.amount ?? 0), 0),
       todayMeals: todayLog.records.length,
       todaySteps: state.stepsByDate[today] ?? 0,
@@ -478,8 +509,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       hasUnseenReward: state.unseenItems.length > 0,
       notice,
       notify,
+      guideSeen: state.guideSeen,
+      guideVisible,
+      showGuide,
+      dismissGuide,
     };
-  }, [state, notice, notify]);
+  }, [state, notice, notify, guideVisible, showGuide, dismissGuide]);
 
   return (
     <AppContext.Provider value={value}>
@@ -487,6 +522,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {notice && (
         <div className="pointer-events-none fixed left-1/2 top-5 z-[80] -translate-x-1/2 rounded-2xl bg-ink px-4 py-2.5 text-[13px] text-white shadow-modal animate-pop-in">
           {notice}
+        </div>
+      )}
+      {guideVisible && (
+        <div className="fixed bottom-[88px] left-1/2 z-50 w-[320px] max-w-[calc(100%-24px)] -translate-x-1/2 animate-pop-in">
+          <div className="relative rounded-[20px] bg-white p-4 shadow-modal">
+            <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 bg-white" />
+            <p className="relative text-[13px] leading-relaxed text-ink/85">
+              记录一餐，你的小分身就能得一颗星，攒星星可以去分身小屋换装哦！
+            </p>
+            <button onClick={dismissGuide} className="relative mt-3 rounded-full bg-avocado px-4 py-1.5 text-xs font-medium text-white">知道了</button>
+          </div>
         </div>
       )}
     </AppContext.Provider>
