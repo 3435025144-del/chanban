@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const [flavor, setFlavor] = useState(state.tasteProfile.flavor);
   const [avoid, setAvoid] = useState(state.tasteProfile.avoid.join('、'));
   const [goal, setGoal] = useState(state.tasteProfile.goal);
+  const [times, setTimes] = useState(state.reminderTimes);
 
   const now = new Date(`${todayKey()}T00:00:00`);
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -36,8 +37,14 @@ export default function ProfilePage() {
     notify(next ? '这个提醒打开啦' : '这个提醒关掉啦');
   };
 
+  const saveReminderTimes = () => {
+    dispatch({ type: 'SET_REMINDER_TIMES', times });
+    setRemindersOpen(false);
+    notify(`模拟提醒已设置：早 ${times.morning} · 午 ${times.noon} · 晚 ${times.evening}`);
+  };
+
   return (
-    <div className="space-y-4 px-4 pb-8 pt-6">
+    <div className="space-y-4 px-4 pb-32 pt-6">
       <header className="flex items-start justify-between gap-3">
         <div>
           <p className="muted">你的小小成就都在这里</p>
@@ -90,7 +97,7 @@ export default function ProfilePage() {
         </div>
         <button onClick={() => setRemindersOpen(true)} className="flex w-full items-center gap-3 rounded-2xl bg-warm p-3 text-left active:scale-[0.99]">
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-avocado"><Icon name="bell" size={18} /></span>
-          <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-ink">提醒设置</span><span className="muted">午餐 12:00 · 喝水每 2 小时</span></span>
+          <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-ink">提醒设置</span><span className="muted">早 {state.reminderTimes.morning} · 午 {state.reminderTimes.noon} · 晚 {state.reminderTimes.evening}</span></span>
           <Icon name="chevronRight" size={16} className="text-muted" />
         </button>
         <Link to="/settings" className="flex items-center gap-3 rounded-2xl bg-warm p-3 active:scale-[0.99]">
@@ -138,7 +145,28 @@ export default function ProfilePage() {
               <span className={`flex h-6 w-10 items-center rounded-full px-0.5 ${state.reminders[key] ? 'bg-avocado' : 'bg-line'}`}><span className={`h-5 w-5 rounded-full bg-white shadow-card transition-transform ${state.reminders[key] ? 'translate-x-4' : ''}`} /></span>
             </button>
           ))}
-          <p className="muted">演示版只保存开关状态，不会真的推送通知。</p>
+          <div className="space-y-2 rounded-2xl bg-warm p-3">
+            <p className="text-xs font-medium text-ink/75">提醒时间（早 / 午 / 晚）</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                ['morning', '早上'],
+                ['noon', '中午'],
+                ['evening', '晚上'],
+              ] as const).map(([key, label]) => (
+                <label key={key} className="flex flex-col items-center gap-1 rounded-2xl bg-white p-2 text-[10px] text-muted">
+                  {label}
+                  <input
+                    type="time"
+                    value={times[key]}
+                    onChange={(e) => setTimes({ ...times, [key]: e.target.value })}
+                    className="w-full bg-transparent text-center text-xs font-medium text-ink outline-none"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+          <button onClick={saveReminderTimes} className="btn-primary w-full">保存提醒时间</button>
+          <p className="muted">演示版会模拟定时推送，不会真的发送通知。</p>
         </div>
       </Modal>
 
