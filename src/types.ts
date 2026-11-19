@@ -1,7 +1,15 @@
 export type Personality = 'gentle' | 'sassy' | 'funny';
 export type BlindBoxPool = 'normal' | 'limited';
-export type BlindBoxItemType = 'outfit' | 'hair' | 'accessory' | 'background' | 'action';
-export type MealType = 'breakfast' | 'lunch' | 'dinner';
+export type BlindBoxItemType =
+  | 'outfit'
+  | 'hair'
+  | 'accessory'
+  | 'background'
+  | 'action'
+  | 'bottom'
+  | 'shoes'
+  | 'look';
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'late' | 'unknown';
 
 export interface AvatarConfig {
   face: string;
@@ -13,6 +21,8 @@ export interface AvatarConfig {
   personality: Personality;
   background?: string;
   action?: string;
+  bottom?: string;
+  shoes?: string;
 }
 
 export interface FoodRecord {
@@ -23,10 +33,49 @@ export interface FoodRecord {
   protein?: number;
   carbs?: number;
   fat?: number;
-  source: 'photo' | 'manual';
+  source: 'photo' | 'manual' | 'eat';
   mealType?: MealType;
+  time?: string;
+  amount?: number;
+  sourceLabel?: string;
   feedback?: string;
   honestStar?: boolean;
+}
+
+export interface WaterLog {
+  id: string;
+  date: string;
+  time: string;
+  amount: number;
+  cupId: string;
+}
+
+export interface WaterCup {
+  id: string;
+  label: string;
+  color: string;
+  icon: string;
+  capacity: number;
+  custom?: boolean;
+}
+
+export interface StarEntry {
+  id: string;
+  date: string;
+  amount: number;
+  reason: string;
+}
+
+export interface FavoriteLook {
+  id: string;
+  name: string;
+  config: AvatarConfig;
+}
+
+export interface ReminderSettings {
+  water: boolean;
+  meals: boolean;
+  cheer: boolean;
 }
 
 export interface DayLog {
@@ -57,7 +106,22 @@ export interface AppState {
   calorieGoal: number;
   height: number;
   weightRecords: Record<string, number>;
+  /** 旧版按杯数存储，仅用于迁移和兼容 */
   waterByDate: Record<string, number>;
+  waterLogs: WaterLog[];
+  waterCup: WaterCup;
+  waterGoal: number;
+  stepsByDate: Record<string, number>;
+  healthConnected: boolean;
+  starLedger: StarEntry[];
+  dailyCheerDates: string[];
+  waterStarDates: string[];
+  walkStarDates: string[];
+  unseenItems: string[];
+  lastBoxResult: DrawResult[] | null;
+  lastBoxNewItemId?: string;
+  favoriteLooks: FavoriteLook[];
+  reminders: ReminderSettings;
   photoTimeline: { date: string; imageDataUrl: string }[];
   streakDays: number;
   streakSevenRewarded: boolean;
