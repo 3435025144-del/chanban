@@ -6,7 +6,7 @@ export type IconName =
   | 'camera' | 'search' | 'cup' | 'walk' | 'gift' | 'hanger' | 'calendar'
   | 'edit' | 'trash' | 'arrowRight' | 'sparkle' | 'wallet' | 'clock' | 'chart'
   | 'bell' | 'shield' | 'info' | 'settings' | 'copy' | 'external' | 'undo'
-  | 'heart' | 'filter' | 'shirt' | 'scissors' | 'palette' | 'list' | 'star';
+  | 'heart' | 'filter' | 'shirt' | 'scissors' | 'palette' | 'list' | 'star' | 'pin';
 
 interface Props {
   name: IconName;
@@ -57,6 +57,7 @@ export default function Icon({ name, size = 22, className = '', strokeWidth = 1.
     palette: <><path d="M12 4a8 8 0 1 0 0 16h1.5a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h4a4 4 0 0 0 4-4 4 4 0 0 0-8-4z" /><path d="M8 9h.01M12 7h.01M16 9h.01" /></>,
     list: <><path d="M9 6h11M9 12h11M9 18h11" /><path d="M4 6h.01M4 12h.01M4 18h.01" /></>,
     star: <path d="m12 3 2.7 6 6.3.7-4.7 4.2 1.4 6.1L12 17l-5.7 3 1.4-6.1L3 9.7 9.3 9z" />,
+    pin: <><path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11z" /><circle cx="12" cy="10" r="2.2" /></>,
   };
 
   return (
