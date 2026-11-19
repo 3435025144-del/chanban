@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import Icon, { type IconName } from '../components/Icon';
@@ -46,7 +46,7 @@ function titleForNow(): string {
 }
 
 export default function EatPage() {
-  const { state, dispatch, todayTotal, notify } = useApp();
+  const { state, dispatch, todayLog, todayTotal, notify, showGuide, guideSeen } = useApp();
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>('recommend');
   const [activeChips, setActiveChips] = useState<string[]>(['有点饿', '想吃热的']);
@@ -61,6 +61,11 @@ export default function EatPage() {
   const [step, setStep] = useState<Step>('detail');
   const [amount, setAmount] = useState('1');
   const [meal, setMeal] = useState<MealType>(() => getMealByTime());
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [floatDelta, setFloatDelta] = useState<number | null>(null);
+  const floatTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(floatTimer.current), []);
 
   const keyword = query.trim().toLowerCase();
   const matches = (...values: (string | number | undefined)[]) =>
@@ -75,6 +80,26 @@ export default function EatPage() {
   }, [activeChips]);
 
   const current = filteredRecommendations[recommendIndex % filteredRecommendations.length];
+
+  const recordedMeals = Array.from(
+    new Set(
+      todayLog.records.map((record) =>
+        record.mealType && record.mealType !== 'unknown' ? record.mealType : getMealByTime(),
+      ),
+    ),
+  );
+  const mealSummary =
+    recordedMeals.length === 0
+      ? '今天还没记录'
+      : recordedMeals.length === 1
+        ? `${mealLabels[recordedMeals[0]]}已记录`
+        : `已记录${recordedMeals.length}餐`;
+
+  const flashCalories = (calories: number) => {
+    setFloatDelta(calories);
+    window.clearTimeout(floatTimer.current);
+    floatTimer.current = window.setTimeout(() => setFloatDelta(null), 1600);
+  };
 
   const takeoutList = useMemo(
     () =>
@@ -107,6 +132,7 @@ export default function EatPage() {
   const toggleChip = (chip: string) => {
     setActiveChips((prev) => (prev.includes(chip) ? prev.filter((item) => item !== chip) : [...prev, chip]));
     setRecommendIndex(0);
+    setRefreshTick((tick) => tick + 1);
   };
 
   const recordRecommendation = () => {
@@ -126,6 +152,8 @@ export default function EatPage() {
       },
     });
     notify(`已记下「${current.name}」，收到一颗星`);
+    flashCalories(current.calories);
+    if (!guideSeen) showGuide();
     setRecommendIndex((i) => i + 1);
   };
 
@@ -155,6 +183,8 @@ export default function EatPage() {
       },
     });
     notify('这一餐记下来了，收到一颗星');
+    flashCalories(Math.round(active.calories * portion));
+    if (!guideSeen) showGuide();
     setStep('result');
   };
 
@@ -183,14 +213,15 @@ export default function EatPage() {
           <button
             key={chip}
             onClick={() => toggleChip(chip)}
-            className={`chip shrink-0 text-xs ${activeChips.includes(chip) ? 'bg-avocadoSoft text-avocado shadow-card' : 'bg-warm text-muted'}`}
+            className={`chip inline-flex shrink-0 items-center gap-1 text-xs ${activeChips.includes(chip) ? 'bg-avocado text-white shadow-card' : 'bg-warm text-muted'}`}
           >
+            {activeChips.includes(chip) && <Icon name="check" size={12} strokeWidth={2.2} />}
             {chip}
           </button>
         ))}
       </div>
 
-      <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-coralSoft to-[#FFF9F2] p-5 shadow-card">
+      <section key={`recommend-${refreshTick}-${current.id}`} className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-coralSoft to-[#FFF9F2] p-5 shadow-card animate-refresh">
         <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-white/50 blur-2xl" />
         <div className="relative flex items-start justify-between">
           <p className="flex items-center gap-1.5 text-xs font-medium text-coralDeep"><Icon name="sparkle" size={14} />小馋替你选好了</p>
@@ -212,7 +243,7 @@ export default function EatPage() {
         <div className="relative mt-4 grid grid-cols-[1.5fr_1fr] gap-2">
           <button onClick={recordRecommendation} className="btn-primary">就吃这个</button>
           <button
-            onClick={() => setRecommendIndex((i) => i + 1)}
+            onClick={() => { setRecommendIndex((i) => i + 1); setRefreshTick((tick) => tick + 1); }}
             className="btn-secondary flex items-center justify-center gap-1.5"
           >
             <Icon name="undo" size={16} />换一个
@@ -277,9 +308,16 @@ export default function EatPage() {
 
       {mode !== 'recommend' && (
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-ink">{mode === 'takeout' ? '外卖攻略' : mode === 'cook' ? '冰箱里有什么' : '附近好店'}</h2>
-            <button onClick={() => setMode('recommend')} className="text-xs text-avocado">看推荐</button>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="shrink-0 text-lg font-bold text-ink">{mode === 'takeout' ? '外卖攻略' : mode === 'cook' ? '冰箱里有什么' : '附近好店'}</h2>
+              {mode === 'nearby' && (
+                <span className="chip shrink-0 bg-warm px-2.5 py-1 text-[10px] text-ink/75">
+                  <Icon name="pin" size={12} className="mr-1 inline text-avocado" />武汉市·光谷
+                </span>
+              )}
+            </div>
+            <button onClick={() => setMode('recommend')} className="shrink-0 text-xs text-avocado">看推荐</button>
           </div>
           <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2.5 shadow-card">
             <Icon name="search" size={17} className="text-muted" />
@@ -370,11 +408,16 @@ export default function EatPage() {
       )}
 
       <div className="fixed bottom-[72px] left-1/2 z-20 w-full max-w-[375px] -translate-x-1/2 px-4">
-        <div className="card flex items-center gap-3 rounded-[20px] bg-avocadoSoft/95 py-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-white text-avocado"><Icon name="list" size={18} /></span>
+        {floatDelta !== null && (
+          <div key={floatDelta} className="pointer-events-none absolute -top-6 right-16 rounded-full bg-avocado px-3 py-1 text-xs font-semibold text-white shadow-card animate-float-up">
+            +{floatDelta} kcal
+          </div>
+        )}
+        <div className="card flex items-center gap-3 rounded-[20px] bg-white py-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-avocadoSoft text-avocado"><Icon name="list" size={18} /></span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-ink">今天已摄入 {todayTotal} / {state.calorieGoal} kcal</p>
-            <p className="muted">早餐已记录</p>
+            <p className="muted">{mealSummary}</p>
           </div>
           <Link to="/record" className="btn-primary px-4 py-2 text-xs">去记录</Link>
         </div>
