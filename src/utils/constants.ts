@@ -41,6 +41,7 @@ export function initialState(): AppState {
     stepsByDate: {},
     healthConnected: false,
     starLedger: [],
+    dailyEarnedByDate: {},
     dailyCheerDates: [],
     waterStarDates: [],
     walkStarDates: [],
@@ -52,6 +53,8 @@ export function initialState(): AppState {
     lastBoxResult: null,
     favoriteLooks: [],
     reminders: { water: true, meals: true, cheer: false },
+    reminderTimes: { morning: '08:00', noon: '12:00', evening: '20:00' },
+    guideSeen: false,
     photoTimeline: [],
     streakDays: 0,
     streakSevenRewarded: false,
@@ -111,6 +114,7 @@ export function loadState(): AppState {
       stepsByDate: parsed.stepsByDate ?? {},
       healthConnected: parsed.healthConnected ?? false,
       starLedger: parsed.starLedger ?? [],
+      dailyEarnedByDate: parsed.dailyEarnedByDate ?? {},
       dailyCheerDates: parsed.dailyCheerDates ?? [],
       waterStarDates: parsed.waterStarDates ?? [],
       walkStarDates: parsed.walkStarDates ?? [],
@@ -123,6 +127,8 @@ export function loadState(): AppState {
       lastBoxNewItemId: parsed.lastBoxNewItemId,
       favoriteLooks: parsed.favoriteLooks ?? [],
       reminders: { ...base.reminders, ...parsed.reminders },
+      reminderTimes: { ...base.reminderTimes, ...parsed.reminderTimes },
+      guideSeen: parsed.guideSeen ?? false,
       appearanceVersion: 2,
     };
   } catch {
