@@ -215,17 +215,17 @@ export default function RecordPage() {
       <header className="flex items-start justify-between gap-3">
         <div>
           <p className="muted">记录与回看，都在这里</p>
-          <h1 className="mt-1 text-[28px] font-bold leading-tight text-ink">今天记下来啦</h1>
+          <h1 className="mt-1 text-[30px] font-bold leading-tight text-text">今天记下来啦</h1>
         </div>
-        <span className="chip shrink-0 bg-coralSoft text-xs font-medium text-coralDeep"><Icon name="star" size={13} className="mr-1 inline" />今日 +{todayStars} 星 · {todayEarned}/5</span>
+        <span className="chip shrink-0 bg-yellowSoft text-xs font-medium text-yellowText"><Icon name="star" size={13} className="mr-1 inline text-yellowText" />今日 +{todayStars} 星 · {todayEarned}/5</span>
       </header>
 
       <section className="card space-y-3">
         <div className="flex items-center justify-between">
-          <button onClick={() => openMonth(0)} className="text-sm font-semibold text-ink underline decoration-avocado/40 underline-offset-4">{weekStart.getFullYear()}年 {weekStart.getMonth() + 1}月</button>
+          <button onClick={() => openMonth(0)} className="text-sm font-semibold text-text underline decoration-primary/40 underline-offset-4">{weekStart.getFullYear()}年 {weekStart.getMonth() + 1}月</button>
           <div className="flex items-center gap-1">
             <button onClick={() => openMonth(-1)} className="icon-btn h-8 w-8" aria-label="上个月"><Icon name="chevronLeft" size={16} /></button>
-            <button onClick={() => { setWeekStart(mondayOf(today)); setSelectedDate(null); }} className="chip bg-warm px-2.5 py-1.5 text-[11px] text-ink">本周</button>
+            <button onClick={() => { setWeekStart(mondayOf(today)); setSelectedDate(null); }} className="chip bg-surface px-2.5 py-1.5 text-[11px] text-text">本周</button>
             <button onClick={() => openMonth(1)} className="icon-btn h-8 w-8" aria-label="下个月"><Icon name="chevronRight" size={16} /></button>
           </div>
         </div>
@@ -236,22 +236,22 @@ export default function RecordPage() {
             const hasRecord = !!log?.records.length;
             return (
               <div key={date.key} className="flex flex-col items-center">
-                <span className={`mb-1 text-[10px] ${isToday ? 'text-avocado' : 'text-muted'}`}>{isToday ? '今天' : date.weekday}</span>
-                <button onClick={() => setSelectedDate(date.key)} className={`grid h-9 w-9 place-items-center rounded-full text-sm font-semibold transition-colors active:scale-95 ${isToday ? 'bg-avocado text-white' : 'text-ink hover:bg-warm'}`}>{date.day}</button>
-                <span className={`mt-1 h-1.5 w-1.5 rounded-full ${log?.isCheatDay ? 'bg-coral' : hasRecord ? 'bg-avocado' : 'bg-transparent'}`} />
+                <span className={`mb-1 text-[10px] ${isToday ? 'text-primary' : 'text-textMuted'}`}>{isToday ? '今天' : date.weekday}</span>
+                <button onClick={() => setSelectedDate(date.key)} className={`grid h-9 w-9 place-items-center rounded-full text-sm font-semibold transition-colors active:scale-95 ${isToday ? 'bg-primary text-primaryText' : 'bg-calendarCell text-text hover:bg-greenSoft'}`}>{date.day}</button>
+                <span className={`mt-1 h-1.5 w-1.5 rounded-full ${log?.isCheatDay ? 'bg-dotWarm' : hasRecord ? 'bg-dotGreen' : 'bg-transparent'}`} />
               </div>
             );
           })}
         </div>
-        <div className="flex items-center justify-between rounded-2xl bg-warm px-3 py-2.5">
+        <div className="flex items-center justify-between rounded-2xl bg-surface px-3 py-2.5">
           <span className="muted">本周平均热量差 · 已完整记录 {weekStats.perfect} 天</span>
-          <span className="text-sm font-bold text-avocado">{weekStats.avg} kcal</span>
+          <span className="text-sm font-bold text-greenText">{weekStats.avg} kcal</span>
         </div>
         {selectedDate && (
-          <div className="flex items-center justify-between rounded-2xl bg-avocadoSoft px-3 py-2.5">
-            <span className="text-xs text-ink/80">{formatDateCN(selectedDate)} · {selectedLog?.records.length ?? 0} 餐 · {selectedTotal} kcal</span>
+          <div className="flex items-center justify-between rounded-2xl bg-greenSoft px-3 py-2.5">
+            <span className="text-xs text-text/80">{formatDateCN(selectedDate)} · {selectedLog?.records.length ?? 0} 餐 · {selectedTotal} kcal</span>
             <span className="flex items-center gap-2">
-              <button onClick={() => setDayDetailOpen(true)} className="text-xs font-medium text-avocado">查看</button>
+              <button onClick={() => setDayDetailOpen(true)} className="text-xs font-medium text-primary">查看</button>
               <button onClick={() => setSelectedDate(null)} className="muted">收起</button>
             </span>
           </div>
@@ -259,22 +259,22 @@ export default function RecordPage() {
       </section>
 
       <div className="grid grid-cols-3 gap-2">
-        <button onClick={() => photoInput.current?.click()} className="flex flex-col items-start gap-2 rounded-[20px] bg-avocadoSoft p-3 text-left shadow-card active:scale-[0.98]">
-          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-avocado"><Icon name="camera" size={18} /></span>
-          <span><span className="block text-sm font-semibold text-ink">拍照识别</span><span className="muted">拍一下就好</span></span>
+        <button onClick={() => photoInput.current?.click()} className="flex flex-col items-start gap-2 rounded-[20px] bg-greenSoft p-3 text-left shadow-card active:scale-[0.98]">
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-card text-greenText"><Icon name="camera" size={18} /></span>
+          <span><span className="block text-sm font-semibold text-text">拍照识别</span><span className="muted">拍一下就好</span></span>
         </button>
-        <button onClick={() => setManualMeal(getMealByTime())} className="flex flex-col items-start gap-2 rounded-[20px] bg-coralSoft p-3 text-left shadow-card active:scale-[0.98]">
-          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-coral"><Icon name="edit" size={18} /></span>
-          <span><span className="block text-sm font-semibold text-ink">手动记一餐</span><span className="muted">自己选更准确</span></span>
+        <button onClick={() => setManualMeal(getMealByTime())} className="flex flex-col items-start gap-2 rounded-[20px] bg-peachSoft p-3 text-left shadow-card active:scale-[0.98]">
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-card text-peachStrong"><Icon name="edit" size={18} /></span>
+          <span><span className="block text-sm font-semibold text-text">手动记一餐</span><span className="muted">自己选更准确</span></span>
         </button>
-        <div className="relative flex flex-col items-start gap-2 rounded-[20px] bg-water p-3 text-left shadow-card">
-          <button onClick={openCup} className="absolute right-2 top-2 text-waterInk" aria-label="水杯设置"><Icon name="settings" size={15} /></button>
+        <div className="relative flex flex-col items-start gap-2 rounded-[20px] bg-cyanSoft p-3 text-left shadow-card">
+          <button onClick={openCup} className="absolute right-2 top-2 text-cyanText" aria-label="水杯设置"><Icon name="settings" size={15} /></button>
           <button onClick={addWater} className="flex w-full flex-col items-start gap-2 text-left active:scale-[0.98]">
-            <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-waterInk"><Icon name="cup" size={18} /></span>
-            <span><span className="block text-sm font-semibold text-ink">喝水</span><span className="muted">{todayWaterMl}/{state.waterGoal} ml</span></span>
+            <span className="grid h-9 w-9 place-items-center rounded-2xl bg-card text-cyanText"><Icon name="cup" size={18} /></span>
+            <span><span className="block text-sm font-semibold text-text">喝水</span><span className="muted">{todayWaterMl}/{state.waterGoal} ml</span></span>
           </button>
           {undoWaterVisible && (
-            <button onClick={undoWater} className="absolute bottom-2 right-2 rounded-full bg-white px-2 py-1 text-[10px] font-medium text-waterInk shadow-card active:scale-95">撤销</button>
+            <button onClick={undoWater} className="absolute bottom-2 right-2 rounded-full bg-card px-2 py-1 text-[10px] font-medium text-cyanText shadow-card active:scale-95">撤销</button>
           )}
         </div>
       </div>
@@ -284,22 +284,22 @@ export default function RecordPage() {
           <div className="flex items-end justify-between">
             <div>
               <p className="muted">今日摄入</p>
-              <p className="mt-1 text-[26px] font-bold leading-none text-ink">{todayTotal} <span className="text-sm font-normal text-muted">/ {state.calorieGoal} kcal</span></p>
+              <p className="mt-1 text-[26px] font-bold leading-none text-text">{todayTotal} <span className="text-sm font-normal text-textMuted">/ {state.calorieGoal} kcal</span></p>
             </div>
-            <span className={`text-xs ${remaining >= 0 ? 'text-avocado' : 'text-coralDeep'}`}>{remaining >= 0 ? `还差 ${remaining} kcal` : `多出 ${Math.abs(remaining)} kcal`}</span>
+            <span className={`text-xs ${remaining >= 0 ? 'text-primary' : 'text-peachStrong'}`}>{remaining >= 0 ? `还差 ${remaining} kcal` : `多出 ${Math.abs(remaining)} kcal`}</span>
           </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-warm"><div className="h-full rounded-full bg-avocado transition-all" style={{ width: `${caloriePercent}%` }} /></div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface"><div className="progress-bar h-full rounded-full transition-all" style={{ width: `${caloriePercent}%` }} /></div>
           <p className="muted mt-2">热量差基于基础代谢与活动量估算，仅供参考。</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-warm p-3">
-            <p className="muted">活动消耗</p>
-            <p className="mt-1 text-lg font-bold text-ink">{activeCalories} <span className="text-xs font-normal text-muted">kcal</span></p>
+          <div className="rounded-2xl bg-cyanSoft p-3">
+            <p className="text-xs text-cyanText">活动消耗</p>
+            <p className="mt-1 text-lg font-bold text-cyanText">{activeCalories} <span className="text-xs font-normal">kcal</span></p>
             <p className="muted">晚饭后快走 25 分钟 · {todaySteps} 步</p>
           </div>
-          <div className="rounded-2xl bg-warm p-3">
-            <p className="muted">预计热量差</p>
-            <p className="mt-1 text-lg font-bold text-ink">{expectedDeficit} <span className="text-xs font-normal text-muted">kcal</span></p>
+          <div className="rounded-2xl bg-peachSoft p-3">
+            <p className="text-xs text-peachText">预计热量差</p>
+            <p className="mt-1 text-lg font-bold text-peachStrong">{expectedDeficit} <span className="text-xs font-normal">kcal</span></p>
             <p className="muted">基础代谢 + 活动 - 摄入</p>
           </div>
         </div>
@@ -314,21 +314,21 @@ export default function RecordPage() {
           const records = grouped[meal];
           const total = records.reduce((sum, r) => sum + r.calories, 0);
           return (
-            <div key={meal} className="flex items-center gap-3 rounded-2xl bg-warm p-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white text-lg">{mealEmoji[meal]}</span>
+            <div key={meal} className="flex items-center gap-3 rounded-2xl bg-surface p-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-card text-lg">{mealEmoji[meal]}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-ink">{mealLabels[meal]}</p>
+                <p className="text-sm font-semibold text-text">{mealLabels[meal]}</p>
                 <p className="muted truncate">{records.length ? records.map((r) => r.name).join('、') : meal === 'snack' ? '想吃就记，不用克制' : '还没有记录'}</p>
               </div>
               {records.length > 0 ? (
-                <button onClick={() => openEditor(today, records[0])} className="text-sm font-bold text-ink">{total} kcal</button>
+                <button onClick={() => openEditor(today, records[0])} className="text-sm font-bold text-text">{total} kcal</button>
               ) : (
-                <button onClick={() => setManualMeal(meal)} className="grid h-8 w-8 place-items-center rounded-full bg-avocado text-white shadow-card" aria-label={`添加${mealLabels[meal]}`}><Icon name="plus" size={17} /></button>
+                <button onClick={() => setManualMeal(meal)} className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primaryText shadow-card" aria-label={`添加${mealLabels[meal]}`}><Icon name="plus" size={17} /></button>
               )}
             </div>
           );
         })}
-        {todayLog.isCheatDay && <p className="rounded-2xl bg-coralSoft p-3 text-xs text-coralDeep">今天已标记为放纵餐，快乐也被认真收下了。</p>}
+        {todayLog.isCheatDay && <p className="rounded-2xl bg-peachSoft p-3 text-xs text-peachStrong">今天已标记为放纵餐，快乐也被认真收下了。</p>}
         {remaining < 0 && !todayLog.isCheatDay && <button onClick={() => { dispatch({ type: 'MARK_CHEAT', date: today }); notify('放纵餐已标记，诚实记录值得一颗星'); }} className="btn-secondary w-full text-xs">标记为放纵餐 · +1 星</button>}
       </section>
 
@@ -347,12 +347,12 @@ export default function RecordPage() {
 
       <Modal open={!!manualMeal} onClose={() => setManualMeal(null)} title={manualMeal ? `添加${mealLabels[manualMeal]}` : ''}>
         <div className="space-y-3">
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="食物名称" className="w-full rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
+          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="食物名称" className="w-full rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
           <div className="grid grid-cols-2 gap-2">
-            <input value={form.calories} onChange={(e) => setForm({ ...form, calories: e.target.value })} placeholder="热量 kcal" inputMode="numeric" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
-            <input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="份数" inputMode="decimal" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
+            <input value={form.calories} onChange={(e) => setForm({ ...form, calories: e.target.value })} placeholder="热量 kcal" inputMode="numeric" className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+            <input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="份数" inputMode="decimal" className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
           </div>
-          <label className="flex items-center gap-2 text-xs text-ink/75"><input type="checkbox" checked={form.honest} onChange={(e) => setForm({ ...form, honest: e.target.checked })} />这是放纵餐，如实记录（额外 +1 星）</label>
+          <label className="flex items-center gap-2 text-xs text-text/75"><input type="checkbox" checked={form.honest} onChange={(e) => setForm({ ...form, honest: e.target.checked })} />这是放纵餐，如实记录（额外 +1 星）</label>
           <button onClick={saveManual} className="btn-primary w-full">记下来啦</button>
         </div>
       </Modal>
@@ -361,22 +361,22 @@ export default function RecordPage() {
         <div className="space-y-3">
           <p className="muted">演示识别，接口预留于 recognizeFood.ts。</p>
           {photoPreview && <img src={photoPreview} alt="食物预览" className="h-44 w-full rounded-2xl object-cover" />}
-          <div className="flex flex-wrap gap-2">{(['breakfast', 'lunch', 'dinner', 'snack', 'late'] as MealType[]).map((item) => <button key={item} onClick={() => setPhotoMeal(item)} className={`chip text-xs ${photoMeal === item ? 'bg-avocado text-white' : 'bg-warm text-muted'}`}>{mealLabels[item]}</button>)}</div>
-          <input value={photoAmount} onChange={(e) => setPhotoAmount(e.target.value)} inputMode="decimal" placeholder="份数" className="w-full rounded-2xl bg-warm px-4 py-2.5 text-sm text-ink outline-none" />
-          {recognizing ? <p className="py-6 text-center text-sm text-muted">正在偷偷看图…</p> : result ? <div className="space-y-2 rounded-2xl bg-warm p-3"><p className="font-semibold text-ink">识别到：{result.name}</p><p className="text-xs text-ink/75">约 {result.calories} kcal</p><p className="text-xs text-avocado">{result.feedback}</p><button onClick={saveRecognized} className="btn-primary w-full">就它了，存入记录</button></div> : null}
+          <div className="flex flex-wrap gap-2">{(['breakfast', 'lunch', 'dinner', 'snack', 'late'] as MealType[]).map((item) => <button key={item} onClick={() => setPhotoMeal(item)} className={`chip text-xs ${photoMeal === item ? 'bg-primary text-primaryText' : 'bg-surface text-textMuted'}`}>{mealLabels[item]}</button>)}</div>
+          <input value={photoAmount} onChange={(e) => setPhotoAmount(e.target.value)} inputMode="decimal" placeholder="份数" className="w-full rounded-2xl bg-surface px-4 py-2.5 text-sm text-text outline-none" />
+          {recognizing ? <p className="py-6 text-center text-sm text-textMuted">正在偷偷看图…</p> : result ? <div className="space-y-2 rounded-2xl bg-surface p-3"><p className="font-semibold text-text">识别到：{result.name}</p><p className="text-xs text-text/75">约 {result.calories} kcal</p><p className="text-xs text-primary">{result.feedback}</p><button onClick={saveRecognized} className="btn-primary w-full">就它了，存入记录</button></div> : null}
         </div>
       </Modal>
 
       <Modal open={!!editing} onClose={() => setEditing(null)} title="修改这一餐">
         {editing && <div className="space-y-3">
-          <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
+          <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
           <div className="grid grid-cols-2 gap-2">
-            <input value={editForm.calories} onChange={(e) => setEditForm({ ...editForm, calories: e.target.value })} inputMode="numeric" placeholder="热量 kcal" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
-            <input value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} inputMode="decimal" placeholder="份数" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
-            <input value={editForm.time} onChange={(e) => setEditForm({ ...editForm, time: e.target.value })} placeholder="时间 HH:mm" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
-            <select value={editForm.meal} onChange={(e) => setEditForm({ ...editForm, meal: e.target.value as MealType })} className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none">{(['breakfast', 'lunch', 'dinner', 'snack', 'late'] as MealType[]).map((meal) => <option key={meal} value={meal}>{mealLabels[meal]}</option>)}</select>
+            <input value={editForm.calories} onChange={(e) => setEditForm({ ...editForm, calories: e.target.value })} inputMode="numeric" placeholder="热量 kcal" className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+            <input value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} inputMode="decimal" placeholder="份数" className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+            <input value={editForm.time} onChange={(e) => setEditForm({ ...editForm, time: e.target.value })} placeholder="时间 HH:mm" className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+            <select value={editForm.meal} onChange={(e) => setEditForm({ ...editForm, meal: e.target.value as MealType })} className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none">{(['breakfast', 'lunch', 'dinner', 'snack', 'late'] as MealType[]).map((meal) => <option key={meal} value={meal}>{mealLabels[meal]}</option>)}</select>
           </div>
-          <div className="grid grid-cols-2 gap-2"><button onClick={deleteRecord} className="btn-secondary text-coral">删除</button><button onClick={saveEditor} className="btn-primary">保存修改</button></div>
+          <div className="grid grid-cols-2 gap-2"><button onClick={deleteRecord} className="btn-secondary text-peachStrong">删除</button><button onClick={saveEditor} className="btn-primary">保存修改</button></div>
         </div>}
       </Modal>
 
@@ -384,16 +384,16 @@ export default function RecordPage() {
         <div className="max-h-[58vh] space-y-3 overflow-y-auto no-scrollbar">
           <div className="flex items-center justify-between">
             <button onClick={() => setMonthOffset((m) => m - 1)} className="icon-btn h-8 w-8" aria-label="上个月"><Icon name="chevronLeft" size={16} /></button>
-            <span className="text-sm font-semibold text-ink">{viewDate.getFullYear()}年 {viewDate.getMonth() + 1}月</span>
+            <span className="text-sm font-semibold text-text">{viewDate.getFullYear()}年 {viewDate.getMonth() + 1}月</span>
             <button onClick={() => setMonthOffset((m) => m + 1)} className="icon-btn h-8 w-8" aria-label="下个月"><Icon name="chevronRight" size={16} /></button>
           </div>
-          <div className="grid grid-cols-7 text-center text-[10px] text-muted">{weekNames.map((name) => <span key={name}>{name}</span>)}</div>
+          <div className="grid grid-cols-7 text-center text-[10px] text-textMuted">{weekNames.map((name) => <span key={name}>{name}</span>)}</div>
           <div className="grid grid-cols-7 gap-1">
             {cells.map((cell, i) => {
               const key = cell.key;
               const total = key ? state.logs[key]?.records.reduce((sum, record) => sum + record.calories, 0) ?? 0 : 0;
               return key ? (
-                <button key={key} onClick={() => chooseMonthDay(key)} className={`flex aspect-square flex-col items-center justify-center rounded-2xl text-[11px] ${key === today ? 'bg-avocado text-white' : 'bg-warm text-ink'}`}>
+                <button key={key} onClick={() => chooseMonthDay(key)} className={`flex aspect-square flex-col items-center justify-center rounded-2xl text-[11px] ${key === today ? 'bg-primary text-primaryText' : 'bg-surface text-text'}`}>
                   <span>{cell.day}</span>
                   <span className="mt-0.5 text-[8px] opacity-75">{total ? `${total}` : ''}</span>
                 </button>
@@ -405,15 +405,15 @@ export default function RecordPage() {
       </Modal>
 
       <Modal open={dayDetailOpen && !!selectedDate} onClose={() => setDayDetailOpen(false)} title={selectedDate ? formatDateCN(selectedDate) : ''}>
-        {selectedLog ? <div className="space-y-2">{selectedLog.records.map((record) => <button key={record.id} onClick={() => { setDayDetailOpen(false); setSelectedDate(null); openEditor(selectedDate!, record); }} className="flex w-full items-center justify-between rounded-2xl bg-warm px-3 py-2.5 text-left text-xs"><span className="truncate text-ink">{record.name}</span><span className="font-medium text-ink">{record.calories} kcal</span></button>)}</div> : <p className="text-sm text-muted">这一天还空空的，随时可以补记。</p>}
+        {selectedLog ? <div className="space-y-2">{selectedLog.records.map((record) => <button key={record.id} onClick={() => { setDayDetailOpen(false); setSelectedDate(null); openEditor(selectedDate!, record); }} className="flex w-full items-center justify-between rounded-2xl bg-surface px-3 py-2.5 text-left text-xs"><span className="truncate text-text">{record.name}</span><span className="font-medium text-text">{record.calories} kcal</span></button>)}</div> : <p className="text-sm text-textMuted">这一天还空空的，随时可以补记。</p>}
       </Modal>
 
       <Modal open={cupOpen} onClose={() => setCupOpen(false)} title="自定义水杯">
         <div className="space-y-3">
-          <input value={cupLabel} onChange={(e) => setCupLabel(e.target.value)} placeholder="杯子名字" className="w-full rounded-2xl bg-warm px-4 py-3 text-sm text-ink outline-none" />
-          <input value={cupCapacity} onChange={(e) => setCupCapacity(e.target.value)} inputMode="numeric" placeholder="容量 ml" className="w-full rounded-2xl bg-warm px-4 py-3 text-sm text-ink outline-none" />
+          <input value={cupLabel} onChange={(e) => setCupLabel(e.target.value)} placeholder="杯子名字" className="w-full rounded-2xl bg-surface px-4 py-3 text-sm text-text outline-none" />
+          <input value={cupCapacity} onChange={(e) => setCupCapacity(e.target.value)} inputMode="numeric" placeholder="容量 ml" className="w-full rounded-2xl bg-surface px-4 py-3 text-sm text-text outline-none" />
           <div className="flex gap-2">{cupColors.map((color) => <button key={color} onClick={() => setCupColor(color)} className={`h-8 w-8 rounded-full border-2 ${cupColor === color ? 'border-ink' : 'border-transparent'}`} style={{ backgroundColor: color }} aria-label={`选择颜色 ${color}`} />)}</div>
-          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{cupPresets.map((cup) => <button key={cup.id} onClick={() => { dispatch({ type: 'SET_WATER_CUP', cup }); setCupOpen(false); notify(`水杯换成${cup.label}啦`); }} className="chip shrink-0 bg-warm text-xs text-ink">{cup.label} · {cup.capacity}ml</button>)}</div>
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{cupPresets.map((cup) => <button key={cup.id} onClick={() => { dispatch({ type: 'SET_WATER_CUP', cup }); setCupOpen(false); notify(`水杯换成${cup.label}啦`); }} className="chip shrink-0 bg-surface text-xs text-text">{cup.label} · {cup.capacity}ml</button>)}</div>
           <button onClick={saveCup} className="btn-primary w-full">用这个杯子</button>
         </div>
       </Modal>
