@@ -20,7 +20,7 @@ export const sassyLines: string[] = [
   '我今天的状态是：等你来给我讲讲好吃的。',
   '管它热量多少，诚实的人类最迷人，懂？',
   '你那点小嘴馋，还不够我塞牙缝的，记录走起。',
-  '别犹豫啦，点一下拍照，我给你打分——满分是勇气分。',
+  '别犹豫啦，点一下拍照，今天的故事就算开了头。',
   '谁规定减肥就得苦着脸？我第一个不同意。',
   '放纵餐怎么了，那是你和生活和解的证据。',
   '好了好了，别盯着我，去把今天的快乐记下来。',
@@ -30,7 +30,7 @@ export const funnyLines: string[] = [
   '噔噔！我是你的分身，专门负责替你开心。',
   '我刚刚偷偷练了一个饱嗝，现在表演给你看：嗝～',
   '据可靠消息，你今天的味蕾正在申请加薪。',
-  '如果开心有热量，你今天肯定超标——开心的那种！',
+  '如果开心有单位，你今天早就满格的那种！',
   '我决定宣布：今天是与蔬菜和平共处纪念日。',
   '馋了？来，我们先对着屏幕做三秒气球人。',
   '我的肚子是道具，你的肚子是主角，别搞混了。',
@@ -73,4 +73,48 @@ export function getAvatarLine(personality: Personality, context?: 'cheat' | 'mis
 
 export function getAllLines(personality: Personality): string[] {
   return pool[personality];
+}
+
+interface HomeLineContext {
+  hour: number;
+  meals: number;
+  waterMl: number;
+  stars: number;
+  cheat: boolean;
+}
+
+const firstMealLines: Record<Personality, string[]> = {
+  gentle: ['第一餐想从哪里开始？我在旁边陪你。', '慢慢挑，今天的第一口值得被好好对待。'],
+  sassy: ['第一餐还没影儿呢，我可没催你啊。', '来吧，给今天开个头，我负责鼓掌。'],
+  funny: ['报告：今天的第一餐正在等待勇者出现。', '我宣布，第一餐仪式现在开始！'],
+};
+const recordedLines: Record<Personality, string[]> = {
+  gentle: ['已经记下一些啦，我们继续按舒服的节奏来。', '看到你的记录，我觉得今天也挺温柔的。'],
+  sassy: ['记得不错嘛，继续保持这种不较劲的劲儿。', '都记下来了，看来今天过得挺有滋味。'],
+  funny: ['记录进度正在加载，我这边负责撒花。', '好看，今天的我因为被记录而发光。'],
+};
+const waterLines: Record<Personality, string[]> = {
+  gentle: ['要先陪我喝一口水吗？不急，慢慢来。', '水杯就在旁边，想喝的时候再喝。'],
+  sassy: ['水杯在看你哦，它说想被用一下。', '喝口水，别让小水杯太孤单。'],
+  funny: ['水杯发明了一个新技能：等你看它。', '我刚才和水杯商量好了，它负责等，你负责随意。'],
+};
+const starLines: Record<Personality, string[]> = {
+  gentle: ['今天已经有小星星落进口袋啦，谢谢你记得我。', '每一颗星都是你好好照顾自己的证据。'],
+  sassy: ['口袋里有星了哦，别假装没看见。', '不错嘛，星星都愿意往你这边跑。'],
+  funny: ['叮！今日星星已到账，我的口袋负责发光。', '星星到账提示音：叮叮叮，开心加倍。'],
+};
+
+export function getContextLine(personality: Personality, ctx: HomeLineContext): string {
+  const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
+  if (ctx.cheat) return pick(cheatLines);
+  if (ctx.meals === 0) return pick(firstMealLines[personality]);
+  if (ctx.waterMl === 0) return pick(waterLines[personality]);
+  if (ctx.stars > 0) return pick(starLines[personality]);
+  return pick(recordedLines[personality]);
+}
+
+export function getGreetingByHour(hour: number): string {
+  if (hour < 11) return greetingLines[0];
+  if (hour < 17) return greetingLines[1];
+  return greetingLines[2];
 }
