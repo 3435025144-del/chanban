@@ -288,7 +288,7 @@ export default function EatPage() {
           <p className="muted">今天想吃点什么？</p>
           <h1 className="mt-1 text-[30px] font-bold leading-tight text-text">{titleForNow()}</h1>
         </div>
-        <Link to="/avatar" className="relative shrink-0 rounded-[20px] bg-surface p-1 shadow-card" aria-label="查看分身">
+        <Link to="/avatar" className="relative shrink-0 overflow-hidden rounded-[20px] bg-surface p-1 shadow-card" aria-label="查看分身">
           <Avatar config={state.avatar.equipped} size={46} />
           <span className="absolute -right-0.5 top-1 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-card" />
         </Link>
