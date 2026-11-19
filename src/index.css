@@ -3,10 +3,56 @@
 @tailwind utilities;
 
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
-  color: #20251F;
-  background: #FFFFFF;
+  --c-page: 244 247 240;
+  --c-surface: 248 250 245;
+  --c-card: 255 254 249;
+  --c-text: 39 52 45;
+  --c-text-muted: 112 120 114;
+  --c-border: 228 233 223;
+
+  --c-primary: 79 115 81;
+  --c-primary-text: 255 254 249;
+  --c-green-soft: 221 235 203;
+  --c-green-text: 64 95 65;
+
+  --c-cyan: 166 222 233;
+  --c-cyan-soft: 225 242 245;
+  --c-cyan-text: 74 128 138;
+
+  --c-yellow: 255 231 137;
+  --c-yellow-soft: 255 241 184;
+  --c-yellow-text: 110 87 33;
+
+  --c-peach: 240 173 145;
+  --c-peach-soft: 247 231 223;
+  --c-peach-text: 146 94 75;
+  --c-peach-strong: 198 109 82;
+
+  --c-avatar-pink: 241 215 219;
+  --c-avatar-pink-soft: 243 217 220;
+  --c-nav-inactive: 123 129 123;
+  --c-calendar-cell: 243 246 238;
+  --c-dot-green: 109 161 139;
+  --c-dot-warm: 232 148 120;
+
+  --color-page: rgb(var(--c-page));
+  --color-surface: rgb(var(--c-surface));
+  --color-card: rgb(var(--c-card));
+  --color-primary: rgb(var(--c-primary));
+  --color-green-soft: rgb(var(--c-green-soft));
+  --color-cyan: rgb(var(--c-cyan));
+  --color-yellow-soft: rgb(var(--c-yellow-soft));
+  --color-peach-soft: rgb(var(--c-peach-soft));
+
+  --shadow-card: 0 12px 30px rgba(54, 73, 58, 0.065);
+  --shadow-modal: 0 18px 44px rgba(54, 73, 58, 0.12);
+  --mask-solid: rgb(var(--c-text));
+
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei UI', sans-serif;
+  color: rgb(var(--c-text));
+  background: var(--color-page);
   -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
 }
 
 * { -webkit-tap-highlight-color: transparent; }
@@ -16,44 +62,59 @@ body {
   margin: 0;
   display: flex;
   justify-content: center;
-  background: #FFFFFF;
+  background: var(--color-page);
+  color: rgb(var(--c-text));
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 .scroll-fade {
-  -webkit-mask-image: linear-gradient(to right, #000 88%, transparent 100%);
-  mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, var(--mask-solid) 88%, transparent 100%);
+  mask-image: linear-gradient(to right, var(--mask-solid) 88%, transparent 100%);
 }
 
 @layer components {
   .card {
-    @apply rounded-[20px] bg-white shadow-card p-4;
+    @apply rounded-[20px] bg-card p-4;
+    box-shadow: var(--shadow-card);
   }
   .card-important {
-    @apply rounded-[24px] bg-white shadow-elevated p-5;
+    @apply rounded-[24px] bg-card p-5;
+    box-shadow: var(--shadow-card);
   }
   .chip {
-    @apply px-3.5 py-2 rounded-2xl text-[13px] transition-colors duration-150 select-none;
+    @apply rounded-[11px] px-3.5 py-2 text-[13px] ring-1 ring-border transition-colors duration-150 select-none;
   }
   .btn-primary {
-    @apply bg-avocado text-white rounded-2xl px-5 py-3 text-[15px] font-semibold shadow-card transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none disabled:cursor-not-allowed;
+    @apply min-h-[46px] rounded-[14px] bg-primary px-5 py-3 text-[15px] font-semibold text-primaryText ring-1 ring-primary transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-border disabled:text-textMuted disabled:ring-border disabled:cursor-not-allowed;
   }
   .btn-reward {
-    @apply bg-coral text-white rounded-2xl px-5 py-3 text-[15px] font-semibold shadow-card transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none disabled:cursor-not-allowed;
+    @apply min-h-[46px] rounded-[14px] bg-yellowSoft px-5 py-3 text-[15px] font-semibold text-yellowText ring-1 ring-yellow transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-border disabled:text-textMuted disabled:ring-border disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply bg-white text-ink rounded-2xl px-5 py-3 text-[14px] font-medium shadow-card transition-all duration-150 hover:bg-warm active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:cursor-not-allowed;
+    @apply min-h-[46px] rounded-[14px] bg-card px-5 py-3 text-[14px] font-medium text-text ring-1 ring-border transition-all duration-150 hover:bg-surface active:scale-[0.98] disabled:bg-border disabled:text-textMuted disabled:cursor-not-allowed;
   }
   .icon-btn {
-    @apply w-10 h-10 rounded-2xl grid place-items-center text-muted transition-colors hover:bg-warm hover:text-ink active:scale-95;
+    @apply grid h-10 w-10 place-items-center rounded-2xl text-textMuted transition-colors hover:bg-surface hover:text-text active:scale-95;
   }
   .section-title {
-    @apply text-[17px] font-semibold text-ink;
+    @apply text-[18px] font-bold text-text;
   }
   .muted {
-    @apply text-xs text-muted;
+    @apply text-xs text-textMuted;
+  }
+  .account-card {
+    background: radial-gradient(circle at 12% 10%, rgb(var(--c-green-soft) / 0.75), transparent 60%), var(--color-card);
+  }
+  .quote-card {
+    background: radial-gradient(circle at 90% 10%, rgb(var(--c-peach-soft) / 0.8), transparent 65%), var(--color-card);
+  }
+  .progress-bar {
+    background: linear-gradient(90deg, rgb(var(--c-cyan)), rgb(var(--c-primary)));
+  }
+  .cal-cell {
+    @apply bg-calendarCell;
   }
 }
 
