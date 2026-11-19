@@ -7,7 +7,7 @@ import { useApp } from '../context/AppContext';
 import { ingredients } from '../data/ingredients';
 import { matchRecipes, recipes as allRecipes } from '../data/recipes';
 import { recommendationForMeal, recommendations } from '../data/recommendations';
-import { nearbyMerchants, takeoutGuides } from '../data/takeoutGuides';
+import { nearbyMerchants, takeoutGuides, type NearbyMerchant } from '../data/takeoutGuides';
 import type { MealType } from '../types';
 import { currentTime, getMealByTime, mealLabels } from '../utils/meal';
 import { todayKey } from '../utils/date';
@@ -73,6 +73,51 @@ function InfoCard({ emoji, name, calories, iconClass, recommendLabel, recommendT
   );
 }
 
+function parseDistance(distance: string): number {
+  const match = distance.match(/([\d.]+)\s*(km|m)/i);
+  if (!match) return 450;
+  const value = parseFloat(match[1]);
+  return match[2].toLowerCase() === 'km' ? value * 1000 : value;
+}
+
+function walkMinutes(distance: string): number {
+  return Math.max(1, Math.round(parseDistance(distance) / 80));
+}
+
+interface NearbyCardProps {
+  shop: NearbyMerchant;
+  onRecord: () => void;
+  onNavigate: () => void;
+}
+
+function NearbyCard({ shop, onRecord, onNavigate }: NearbyCardProps) {
+  return (
+    <div className="card rounded-[22px]">
+      <button type="button" onClick={onRecord} className="tap-bounce block w-full text-left">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyanSoft text-xl">{shop.emoji}</span>
+          <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-text">{shop.name}</span>
+          <span className="shrink-0 text-xl font-bold text-text">
+            {shop.avgCalories}<span className="ml-0.5 text-[10px] font-medium text-textMuted">kcal</span>
+          </span>
+        </div>
+        <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+          <p className="text-xs leading-relaxed text-primary">✅ 推荐：{shop.recommend}</p>
+          <p className="text-xs leading-relaxed text-peachStrong">⚠️ 避坑：{shop.avoid}</p>
+        </div>
+      </button>
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+        <span className="flex items-center gap-1 text-[11px] text-textMuted">
+          <Icon name="pin" size={13} className="text-primary" />{shop.distance} · 步行 {walkMinutes(shop.distance)} 分钟
+        </span>
+        <button type="button" onClick={onNavigate} className="tap-bounce rounded-full bg-greenSoft px-3.5 py-1.5 text-[12px] font-medium text-greenText">
+          去这里 📍
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function EatPage() {
   const { state, dispatch, todayLog, todayTotal, notify, showGuide, guideSeen } = useApp();
   const navigate = useNavigate();
@@ -92,6 +137,7 @@ export default function EatPage() {
   const [step, setStep] = useState<Step>('confirm');
   const [amount, setAmount] = useState('1');
   const [meal, setMeal] = useState<MealType>(() => getMealByTime());
+  const [navShop, setNavShop] = useState<NearbyMerchant | null>(null);
   const floatTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => () => window.clearTimeout(floatTimer.current), []);
@@ -223,6 +269,14 @@ export default function EatPage() {
   const closeModal = () => {
     setActive(null);
     setStep('confirm');
+  };
+
+  const openMapApp = () => {
+    if (!navShop) return;
+    const position = `114.4058,30.4812`;
+    const url = `https://uri.amap.com/marker?position=${position}&name=${encodeURIComponent(navShop.name)}&src=chanban&coordinate=gaode&callnative=1`;
+    notify('正在为您唤起地图...');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const totalCalories = active ? Math.round(active.calories * (Math.min(10, Math.max(0.1, Number(amount) || 1)))) : 0;
@@ -401,17 +455,11 @@ export default function EatPage() {
                 </select>
               </div>
               {nearbyList.map((shop) => (
-                <InfoCard
+                <NearbyCard
                   key={shop.id}
-                  emoji={shop.emoji}
-                  name={shop.name}
-                  calories={shop.avgCalories}
-                  iconClass="bg-cyanSoft"
-                  recommendLabel="✅ 推荐"
-                  recommendText={shop.recommend}
-                  avoidLabel="⚠️ 避坑"
-                  avoidText={shop.avoid}
-                  onClick={() => openRecord({ id: shop.id, name: shop.name, emoji: shop.emoji, calories: shop.avgCalories, kind: `附近好店 · ${shop.name}` })}
+                  shop={shop}
+                  onRecord={() => openRecord({ id: shop.id, name: shop.name, emoji: shop.emoji, calories: shop.avgCalories, kind: `附近好店 · ${shop.name}` })}
+                  onNavigate={() => setNavShop(shop)}
                 />
               ))}
               {nearbyList.length === 0 && <p className="py-6 text-center text-xs text-textMuted">没找到相关店，换个词试试。</p>}
@@ -446,6 +494,47 @@ export default function EatPage() {
           </Link>
         </div>
       </div>
+
+      {navShop && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-text/40" onClick={() => setNavShop(null)}>
+          <div className="animate-sheet-up w-full max-w-[375px] rounded-t-[26px] bg-card p-5 pb-8 shadow-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-border" />
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] text-textMuted">路线导航</p>
+                <h3 className="truncate text-lg font-bold text-text">{navShop.name}</h3>
+              </div>
+              <button onClick={() => setNavShop(null)} className="icon-btn h-9 w-9" aria-label="关闭"><Icon name="close" size={18} /></button>
+            </div>
+
+            <div className="relative mt-4 h-40 overflow-hidden rounded-[20px] bg-surface">
+              <div className="map-grid absolute inset-0" />
+              <svg className="absolute inset-0 h-full w-full" viewBox="0 0 300 160" preserveAspectRatio="none">
+                <path d="M36 128 C 90 120, 110 70, 168 78 S 240 40, 268 34" fill="none" stroke="rgb(var(--c-primary))" strokeWidth="3" strokeLinecap="round" strokeDasharray="7 6" />
+              </svg>
+              <span className="absolute left-[8%] top-[76%] grid h-7 w-7 place-items-center rounded-full bg-primary text-primaryText shadow-card"><Icon name="walk" size={15} /></span>
+              <span className="absolute right-[9%] top-[14%] grid h-8 w-8 place-items-center rounded-full bg-peachStrong text-card shadow-card"><Icon name="pin" size={17} /></span>
+              <span className="absolute left-[8%] top-[86%] text-[9px] text-textMuted">你在这里</span>
+              <span className="absolute right-[5%] top-[2%] text-[9px] font-medium text-peachStrong">{navShop.name}</span>
+            </div>
+
+            <div className="mt-4 flex items-center gap-4">
+              <div className="flex flex-1 items-center gap-2 rounded-2xl bg-surface px-3 py-2.5">
+                <Icon name="pin" size={16} className="text-primary" />
+                <div><p className="text-[10px] text-textMuted">距离</p><p className="text-sm font-semibold text-text">距离你 {navShop.distance}</p></div>
+              </div>
+              <div className="flex flex-1 items-center gap-2 rounded-2xl bg-surface px-3 py-2.5">
+                <Icon name="walk" size={16} className="text-primary" />
+                <div><p className="text-[10px] text-textMuted">预估</p><p className="text-sm font-semibold text-text">步行 {walkMinutes(navShop.distance)} 分钟</p></div>
+              </div>
+            </div>
+
+            <button onClick={openMapApp} className="btn-primary mt-4 flex w-full items-center justify-center gap-2">
+              <Icon name="external" size={17} />打开地图 App 导航
+            </button>
+          </div>
+        </div>
+      )}
 
       <Modal open={!!active} onClose={closeModal} title={active ? (step === 'result' ? '记下啦' : '确认这一餐') : ''}>
         {active && step === 'confirm' && (
