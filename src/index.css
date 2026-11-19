@@ -4,54 +4,64 @@
 
 :root {
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
-  color: #20240F;
-  background: #F8F8EB;
+  color: #22271F;
+  background: #FFFFFF;
   -webkit-font-smoothing: antialiased;
 }
 
 * { -webkit-tap-highlight-color: transparent; }
-
 html, body, #root { min-height: 100%; }
 
 body {
   margin: 0;
   display: flex;
   justify-content: center;
-  background: #E9EADF;
+  background: #FFFFFF;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+.scroll-fade {
+  -webkit-mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+}
+
 @layer components {
   .card {
-    @apply rounded-3xl bg-white shadow-card p-4;
+    @apply rounded-[20px] bg-warm shadow-card p-4;
+  }
+  .card-important {
+    @apply rounded-[24px] bg-white shadow-elevated p-5;
   }
   .chip {
-    @apply px-3 py-1.5 rounded-full text-sm transition-colors;
+    @apply px-3.5 py-2 rounded-2xl text-[13px] transition-colors duration-150 select-none;
   }
   .btn-primary {
-    @apply bg-avocado text-white rounded-full px-5 py-2.5 font-medium active:scale-[0.98] transition-transform shadow-pop;
+    @apply bg-avocado text-avocadoInk rounded-2xl px-5 py-3 text-[15px] font-medium shadow-card transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none disabled:cursor-not-allowed;
   }
-  .btn-coral {
-    @apply bg-coral text-white rounded-full px-5 py-2.5 font-medium active:scale-[0.98] transition-transform;
+  .btn-reward {
+    @apply bg-coral text-coralInk rounded-2xl px-5 py-3 text-[15px] font-semibold shadow-card transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:shadow-none disabled:cursor-not-allowed;
   }
-  .btn-ghost {
-    @apply bg-white text-avocadoDark rounded-full px-4 py-2 text-sm active:scale-[0.98] transition-transform;
+  .btn-secondary {
+    @apply bg-white text-muted rounded-2xl px-5 py-3 text-[14px] border border-line transition-all duration-150 hover:bg-warm active:scale-[0.98] disabled:bg-line disabled:text-muted disabled:cursor-not-allowed;
+  }
+  .icon-btn {
+    @apply w-10 h-10 rounded-2xl grid place-items-center text-muted transition-colors hover:bg-warm hover:text-ink active:scale-95;
   }
   .section-title {
-    @apply text-[15px] font-semibold text-ink;
+    @apply text-[17px] font-semibold text-ink;
   }
   .muted {
     @apply text-xs text-muted;
   }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+@keyframes breathe-soft {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.03); opacity: 0.92; }
 }
-.animate-float { animation: float 3.2s ease-in-out infinite; }
+.animate-idle { animation: breathe-soft 4.8s ease-in-out infinite; }
 
 @keyframes breathe {
   0%, 100% { transform: scale(0.82); opacity: 0.75; }
@@ -69,8 +79,8 @@ body {
 .animate-shake { animation: shake 0.65s ease-in-out infinite; }
 
 @keyframes pop-in {
-  0% { transform: scale(0.6); opacity: 0; }
-  70% { transform: scale(1.08); opacity: 1; }
+  0% { transform: scale(0.94); opacity: 0; }
+  70% { transform: scale(1.02); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
-.animate-pop-in { animation: pop-in 0.4s ease-out both; }
+.animate-pop-in { animation: pop-in 0.28s ease-out both; }
