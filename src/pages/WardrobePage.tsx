@@ -62,9 +62,9 @@ export default function WardrobePage() {
     <div className="flex min-h-screen flex-col px-4 pb-28 pt-6">
       <SubPageHeader title="衣帽间" subtitle="点一下就能试穿" backTo="/avatar" />
 
-      <section className="flex min-h-[320px] flex-col items-center justify-center rounded-[24px] bg-card py-4 shadow-card">
-        <div className="rounded-[20px] bg-surface p-2">
-          <Avatar config={draft} size={230} className="animate-idle" />
+      <section className="flex flex-col items-center justify-center rounded-[24px] bg-card p-3 shadow-card">
+        <div className="w-full overflow-hidden rounded-[20px]">
+          <Avatar config={draft} fill className="animate-idle" />
         </div>
         <p className="mt-3 text-sm font-medium text-text">{state.avatar.equipped.name} · 试穿中</p>
       </section>
