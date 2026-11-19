@@ -74,7 +74,7 @@ export default function StarBoxPage() {
 
       <section className="card flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-avocadoSoft text-avocadoInk"><Icon name="star" size={19} /></span>
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-avocadoSoft text-avocado"><Icon name="star" size={19} /></span>
           <span>
             <span className="block text-xs text-muted">可用星星</span>
             <span className="block text-lg font-bold text-ink">{state.blindBox.stars}</span>
@@ -82,7 +82,7 @@ export default function StarBoxPage() {
         </div>
         <div className="h-8 w-px bg-line" />
         <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-coralSoft text-coralInk"><Icon name="gift" size={19} /></span>
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-coralSoft text-coral"><Icon name="gift" size={19} /></span>
           <span>
             <span className="block text-xs text-muted">碎片</span>
             <span className="block text-lg font-bold text-ink">{state.blindBox.fragments}/10</span>
@@ -93,7 +93,7 @@ export default function StarBoxPage() {
       <section className="card-important space-y-4 text-center">
         <div className="relative mx-auto grid h-36 w-36 place-items-center rounded-[32px] bg-avocadoSoft">
           <span className="absolute inset-3 rounded-[26px] border border-dashed border-avocado/50" />
-          <Icon name="gift" size={64} className={`relative text-avocadoInk ${pulling ? 'animate-shake' : 'animate-idle'}`} />
+          <Icon name="gift" size={64} className={`relative text-avocado ${pulling ? 'animate-shake' : 'animate-idle'}`} />
           {hasUnseen() && (
             <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-coral ring-2 ring-white" />
           )}
@@ -108,7 +108,7 @@ export default function StarBoxPage() {
               key={item}
               onClick={() => choosePool(item)}
               className={`rounded-2xl py-2 text-xs transition-colors active:scale-95 ${
-                pool === item ? 'bg-white font-semibold text-avocadoInk shadow-card' : 'text-muted'
+                pool === item ? 'bg-white font-semibold text-avocado shadow-card' : 'text-muted'
               }`}
             >
               {item === 'normal' ? '日常盒' : limitedUnlocked ? '限定盒' : '限定盒 · 未解锁'}
@@ -131,7 +131,7 @@ export default function StarBoxPage() {
             十连 · 45 星
           </button>
         </div>
-        <Link to="/record" className="block text-xs text-avocadoInk underline">星星不够？去记录一餐</Link>
+        <Link to="/record" className="block text-xs text-avocado underline">星星不够？去记录一餐</Link>
       </section>
 
       <section className="card space-y-3">
@@ -161,7 +161,7 @@ export default function StarBoxPage() {
             {state.starLedger.slice(0, 4).map((entry) => (
               <div key={entry.id} className="flex items-center justify-between rounded-2xl bg-warm px-3 py-2.5 text-xs">
                 <span className="text-ink/80">{entry.reason}</span>
-                <span className="font-semibold text-avocadoInk">+{entry.amount}</span>
+                <span className="font-semibold text-avocado">+{entry.amount}</span>
               </div>
             ))}
           </div>
