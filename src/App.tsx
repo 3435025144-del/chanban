@@ -18,7 +18,7 @@ export default function App() {
   }, [location.pathname]);
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[375px] overflow-hidden bg-white pb-24 shadow-card">
+    <div className="relative mx-auto min-h-screen w-full max-w-[375px] overflow-hidden bg-page pb-24 shadow-card">
       <Routes>
         <Route path="/" element={<Navigate to="/eat" replace />} />
         <Route path="/eat" element={<EatPage />} />
