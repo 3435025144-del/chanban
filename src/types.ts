@@ -78,6 +78,12 @@ export interface ReminderSettings {
   cheer: boolean;
 }
 
+export interface ReminderTimes {
+  morning: string;
+  noon: string;
+  evening: string;
+}
+
 export interface MoodLog {
   mood: string;
   note?: string;
@@ -125,6 +131,7 @@ export interface AppState {
   stepsByDate: Record<string, number>;
   healthConnected: boolean;
   starLedger: StarEntry[];
+  dailyEarnedByDate: Record<string, number>;
   dailyCheerDates: string[];
   waterStarDates: string[];
   walkStarDates: string[];
@@ -137,6 +144,8 @@ export interface AppState {
   lastBoxNewItemId?: string;
   favoriteLooks: FavoriteLook[];
   reminders: ReminderSettings;
+  reminderTimes: ReminderTimes;
+  guideSeen: boolean;
   photoTimeline: { date: string; imageDataUrl: string }[];
   streakDays: number;
   streakSevenRewarded: boolean;
