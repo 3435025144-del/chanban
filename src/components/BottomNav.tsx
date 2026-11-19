@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
 import Icon, { type IconName } from './Icon';
 
 const tabs: { to: string; label: string; icon: IconName }[] = [
@@ -9,6 +10,7 @@ const tabs: { to: string; label: string; icon: IconName }[] = [
 ];
 
 export default function BottomNav() {
+  const { state } = useApp();
   return (
     <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-[375px] -translate-x-1/2 bg-white/95 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] backdrop-blur" aria-label="主导航">
       <div className="grid grid-cols-4">
@@ -25,8 +27,11 @@ export default function BottomNav() {
           >
             {({ isActive }) => (
               <>
-                <span className={`grid h-9 w-9 place-items-center rounded-2xl transition-colors ${isActive ? 'bg-avocado text-white shadow-card' : 'bg-transparent'}`}>
+                <span className={`relative grid h-9 w-9 place-items-center rounded-2xl transition-colors ${isActive ? 'bg-avocado text-white shadow-card' : 'bg-transparent'}`}>
                   <Icon name={tab.icon} size={20} strokeWidth={isActive ? 2 : 1.7} />
+                  {tab.to === '/avatar' && !state.guideSeen && (
+                    <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-coral ring-2 ring-white" />
+                  )}
                 </span>
                 <span>{tab.label}</span>
               </>
