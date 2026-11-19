@@ -3,9 +3,11 @@ import {
   accessoryOptions,
   actionOptions,
   backgroundOptions,
+  bottomOptions,
   faceOptions,
   hairOptions,
   outfitOptions,
+  shoesOptions,
   skinOptions,
 } from '../data/avatarOptions';
 import type { AvatarConfig } from '../types';
@@ -22,6 +24,8 @@ export default function Avatar({ config, size = 180, className = '' }: Props) {
   const hair = hairOptions.find((o) => o.id === config.hair) ?? hairOptions[0];
   const skin = skinOptions.find((o) => o.id === config.skin) ?? skinOptions[2];
   const outfit = outfitOptions.find((o) => o.id === config.outfit) ?? outfitOptions[0];
+  const bottom = bottomOptions.find((o) => o.id === config.bottom) ?? bottomOptions[0];
+  const shoes = shoesOptions.find((o) => o.id === config.shoes) ?? shoesOptions[0];
   const accessory = config.accessory ?? 'none';
   const background = backgroundOptions.find((o) => o.id === config.background) ?? backgroundOptions[0];
   const action = config.action ?? 'none';
@@ -183,16 +187,16 @@ export default function Avatar({ config, size = 180, className = '' }: Props) {
 
       <path d="M82 150 L78 224 Q78 232 86 232 L92 232 L96 158 Z" fill={skin.color} />
       <path d="M108 158 L112 232 L119 232 Q127 232 126 224 L120 150 Z" fill={skin.color} />
-      <rect x="78" y="214" width="18" height="18" rx="6" fill="#BFE3D8" />
-      <rect x="108" y="214" width="18" height="18" rx="6" fill="#BFE3D8" />
+      <rect x="78" y="214" width="18" height="18" rx="6" fill={bottom.accent} />
+      <rect x="108" y="214" width="18" height="18" rx="6" fill={bottom.accent} />
       <path d="M78 220 H96 M78 225 H96 M108 220 H126 M108 225 H126" stroke="#FFFFFF" strokeWidth="1.5" opacity="0.7" />
-      <path d="M70 232 Q84 226 98 234 Q101 242 90 244 L68 244 Q62 240 70 232 Z" fill="#D9D5F2" />
-      <path d="M106 234 Q120 226 134 232 Q142 240 136 244 L112 244 Q101 242 106 234 Z" fill="#D9D5F2" />
-      <path d="M72 236 Q86 232 96 238" stroke="#F4A46D" strokeWidth="4" fill="none" strokeLinecap="round" />
-      <path d="M108 238 Q120 232 132 236" stroke="#F4A46D" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M70 232 Q84 226 98 234 Q101 242 90 244 L68 244 Q62 240 70 232 Z" fill={shoes.color} />
+      <path d="M106 234 Q120 226 134 232 Q142 240 136 244 L112 244 Q101 242 106 234 Z" fill={shoes.color} />
+      <path d="M72 236 Q86 232 96 238" stroke={shoes.accent} strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M108 238 Q120 232 132 236" stroke={shoes.accent} strokeWidth="4" fill="none" strokeLinecap="round" />
 
-      <path d="M72 158 Q100 150 130 158 L134 190 L112 192 L104 172 L96 192 L70 190 Z" fill="#A7A5D8" />
-      <path d="M70 172 L98 174 L96 192 L70 190 Z" fill="#B8D7CF" opacity="0.9" />
+      <path d="M72 158 Q100 150 130 158 L134 190 L112 192 L104 172 L96 192 L70 190 Z" fill={bottom.color} />
+      <path d="M70 172 L98 174 L96 192 L70 190 Z" fill={bottom.accent} opacity="0.9" />
 
       <path d="M70 108 Q100 94 130 108 L146 172 Q100 184 54 172 Z" fill={outfit.color} />
       <path d="M78 100 Q100 86 122 100 Q128 112 116 118 Q100 124 84 118 Q72 112 78 100 Z" fill={outfit.accent} />
@@ -245,8 +249,10 @@ export default function Avatar({ config, size = 180, className = '' }: Props) {
 export function equippedLabel(config: AvatarConfig): string {
   const hair = hairOptions.find((o) => o.id === config.hair)?.label ?? '默认发型';
   const outfit = outfitOptions.find((o) => o.id === config.outfit)?.label ?? '默认衣服';
+  const bottom = bottomOptions.find((o) => o.id === config.bottom)?.label ?? '';
+  const shoes = shoesOptions.find((o) => o.id === config.shoes)?.label ?? '';
   const acc = config.accessory && config.accessory !== 'none'
     ? accessoryOptions.find((o) => o.id === config.accessory)?.label ?? ''
     : '';
-  return [outfit, hair, acc].filter(Boolean).join(' · ') || actionOptions[0].label;
+  return [outfit, bottom, shoes, hair, acc].filter(Boolean).join(' · ') || actionOptions[0].label;
 }
