@@ -2,6 +2,8 @@ export interface FaceOption { id: string; label: string; rx: number; ry: number 
 export interface HairOption { id: string; label: string; color: string }
 export interface SkinOption { id: string; label: string; color: string }
 export interface OutfitOption { id: string; label: string; color: string; accent: string }
+export interface BottomOption { id: string; label: string; color: string; accent: string }
+export interface ShoesOption { id: string; label: string; color: string; accent: string }
 export interface AccessoryOption { id: string; label: string }
 export interface SceneOption { id: string; label: string; from: string; to: string }
 export interface ActionOption { id: string; label: string }
@@ -38,6 +40,19 @@ export const outfitOptions: OutfitOption[] = [
   { id: 'dress', label: '草莓小裙子', color: '#F49AB0', accent: '#FFE3EA' },
   { id: 'stripe', label: '海盐条纹衫', color: '#F4F0E6', accent: '#6FA9C9' },
   { id: 'coat', label: '焦糖小外套', color: '#C98F5E', accent: '#F7E6D4' },
+];
+
+export const bottomOptions: BottomOption[] = [
+  { id: 'shortsMix', label: '拼色短裤', color: '#A7A5D8', accent: '#B8D7CF' },
+  { id: 'shortsNavy', label: '深蓝短裤', color: '#4C5A8A', accent: '#7D88B8' },
+  { id: 'skirtDenim', label: '牛仔短裙', color: '#7FA8C9', accent: '#BFD7EA' },
+  { id: 'pantsLinen', label: '亚麻长裤', color: '#E3D9C6', accent: '#CFC1A8' },
+];
+
+export const shoesOptions: ShoesOption[] = [
+  { id: 'sneaker', label: '奶白球鞋', color: '#EDE6DE', accent: '#F4A46D' },
+  { id: 'boots', label: '奶油短靴', color: '#D8C6A8', accent: '#A98862' },
+  { id: 'sandals', label: '轻快凉鞋', color: '#C7DDD5', accent: '#8FB9AA' },
 ];
 
 export const accessoryOptions: AccessoryOption[] = [
