@@ -39,7 +39,7 @@ export default function AvatarPage() {
   const starsToLevel = Math.max(1, Math.ceil((expNeed - state.avatar.exp) / 10));
   const waterClaimed = state.waterStarDates.includes(today);
   const moodClaimed = state.moodStarDates.includes(today);
-  const starCapReached = todayEarned >= 5;
+  const starCapReached = todayEarned >= 9999;
 
   const refreshLine = () => {
     setInteractionLine(getContextLine(state.avatar.equipped.personality, {
@@ -85,12 +85,10 @@ export default function AvatarPage() {
           <span className="chip bg-surface px-2.5 py-1.5 text-[11px] text-text/75">Lv.{state.avatar.level} · {state.avatar.equipped.name}</span>
           <span className="text-[11px] text-textMuted">再赚 {starsToLevel} 星升级</span>
         </div>
-        <div className="rounded-[20px] bg-peachSoft/70 p-3">
-          <div className="rounded-[20px] bg-card p-2">
-            <button onClick={refreshLine} className="mx-auto block animate-idle" aria-label="和分身互动">
-              <Avatar config={state.avatar.equipped} size={210} />
-            </button>
-          </div>
+        <div className="overflow-hidden rounded-[20px]">
+          <button onClick={refreshLine} className="block w-full animate-idle" aria-label="和分身互动">
+            <Avatar config={state.avatar.equipped} fill />
+          </button>
         </div>
         <p key={lineSeed} className="mx-auto max-w-[280px] text-center text-sm leading-relaxed text-text/80 animate-pop-in">“{interactionLine}”</p>
         <div className="grid grid-cols-[1.5fr_1fr] gap-2">
@@ -113,7 +111,7 @@ export default function AvatarPage() {
       <section className="card space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="section-title">今天怎么赚星</h2>
-          <span className={`text-[11px] ${starCapReached ? 'text-peachStrong' : 'text-yellowText'}`}>今日已赚 {todayEarned}/5 星</span>
+          <span className={`text-[11px] ${starCapReached ? 'text-peachStrong' : 'text-yellowText'}`}>今日已赚 {todayEarned} 星</span>
         </div>
         <Link to="/record" className="flex items-center gap-3 rounded-2xl bg-surface p-3 active:scale-[0.99]">
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-card text-primary"><Icon name="camera" size={18} /></span>
