@@ -51,6 +51,7 @@ export default {
         card: 'var(--shadow-card)',
         elevated: 'var(--shadow-card)',
         modal: 'var(--shadow-modal)',
+        intake: '0 10px 30px rgba(54, 73, 58, 0.06)',
       },
     },
   },
