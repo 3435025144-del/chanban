@@ -19,7 +19,9 @@ import type {
   DrawResult,
   FavoriteLook,
   FoodRecord,
+  MoodLog,
   ReminderSettings,
+  TasteProfile,
   WaterCup,
 } from '../types';
 import { daysBetween, shiftDate, todayKey } from '../utils/date';
@@ -52,6 +54,8 @@ type Action =
   | { type: 'SAVE_LOOK'; look: FavoriteLook }
   | { type: 'TOGGLE_FAVORITE_LOOK'; id: string; config?: AvatarConfig }
   | { type: 'SET_REMINDERS'; patch: Partial<ReminderSettings> }
+  | { type: 'SET_TASTE_PROFILE'; patch: Partial<TasteProfile> }
+  | { type: 'SET_MOOD'; date: string; mood: string; note?: string }
   | { type: 'CLEAR_DATA' };
 
 function makeId(prefix: string): string {
@@ -274,6 +278,10 @@ function reduce(state: AppState, action: Action): AppState {
       const base: AppState = {
         ...state,
         stepsByDate: { ...state.stepsByDate, [action.date]: (state.stepsByDate[action.date] ?? 0) + steps },
+        activeCaloriesByDate: {
+          ...state.activeCaloriesByDate,
+          [action.date]: (state.activeCaloriesByDate[action.date] ?? 0) + Math.round(steps * 0.04),
+        },
       };
       if (state.walkStarDates.includes(action.date) || steps < 600) return base;
       return earn(
@@ -372,6 +380,17 @@ function reduce(state: AppState, action: Action): AppState {
     }
     case 'SET_REMINDERS':
       return { ...state, reminders: { ...state.reminders, ...action.patch } };
+    case 'SET_TASTE_PROFILE':
+      return { ...state, tasteProfile: { ...state.tasteProfile, ...action.patch } };
+    case 'SET_MOOD': {
+      const base: AppState = {
+        ...state,
+        moodLogs: { ...state.moodLogs, [action.date]: { mood: action.mood, note: action.note } },
+        avatar: { ...state.avatar, mood: action.mood },
+      };
+      if (state.moodStarDates.includes(action.date)) return base;
+      return earn({ ...base, moodStarDates: [...state.moodStarDates, action.date] }, action.date, 1, '记录今天的心情');
+    }
     case 'CLEAR_DATA':
       return initialState();
     default:
@@ -391,6 +410,9 @@ interface AppContextValue {
   todayMeals: number;
   todaySteps: number;
   todayWeight?: number;
+  todayMood?: MoodLog;
+  activeCalories: number;
+  expectedDeficit: number;
   remaining: number;
   limitedUnlocked: boolean;
   ownedItemNames: string[];
@@ -433,6 +455,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const todayWaterLogs = state.waterLogs.filter((log) => log.date === today);
     const weightDates = Object.keys(state.weightRecords).filter((d) => d <= today).sort();
     const todayWeight = weightDates.length > 0 ? state.weightRecords[weightDates[weightDates.length - 1]] : undefined;
+    const activeCalories = state.activeCaloriesByDate[today] ?? 180;
+    const expectedDeficit = Math.max(0, state.calorieGoal - todayTotal + activeCalories - 150);
     return {
       state,
       dispatch,
@@ -445,6 +469,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       todayMeals: todayLog.records.length,
       todaySteps: state.stepsByDate[today] ?? 0,
       todayWeight,
+      todayMood: state.moodLogs[today],
+      activeCalories,
+      expectedDeficit,
       remaining: state.calorieGoal - todayTotal,
       limitedUnlocked: state.milestonesClaimed.length > 0,
       ownedItemNames: state.blindBox.ownedItems.map((id) => findItem(id)?.name ?? id),
