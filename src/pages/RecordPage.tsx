@@ -6,15 +6,15 @@ import { useApp } from '../context/AppContext';
 import { cupColors, cupPresets } from '../data/cups';
 import type { FoodRecord, MealType, RecognitionResult, WaterCup } from '../types';
 import { formatDateCN, monthCells, todayKey } from '../utils/date';
-import { currentTime, getMealByTime, mealLabels, mealOrder } from '../utils/meal';
+import { currentTime, getMealByTime, mealLabels } from '../utils/meal';
 import { isLikelyCheat, recognizeFood } from '../utils/recognizeFood';
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const weekNames = ['一', '二', '三', '四', '五', '六', '日'];
+const mealEmoji: Record<MealType, string> = { breakfast: '🥚', lunch: '🥗', dinner: '🍛', snack: '🍊', late: '🌙', unknown: '🍽️' };
+const mainMeals: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
-interface EditState {
-  date: string;
-  record: FoodRecord;
-}
+interface EditState { date: string; record: FoodRecord }
 
 function inferMeal(record: FoodRecord): MealType {
   if (record.mealType) return record.mealType;
@@ -25,28 +25,28 @@ function inferMeal(record: FoodRecord): MealType {
   return getMealByTime();
 }
 
+function mondayOf(date: string): Date {
+  const d = new Date(`${date}T00:00:00`);
+  const day = d.getDay() || 7;
+  d.setDate(d.getDate() - day + 1);
+  return d;
+}
+
 export default function RecordPage() {
   const {
-    state,
-    dispatch,
-    todayLog,
-    todayTotal,
-    todayWaterMl,
-    todayWaterCount,
-    todayStars,
-    todaySteps,
-    remaining,
-    notify,
+    state, dispatch, todayLog, todayTotal, todayWaterMl, todayWaterCount, todayStars,
+    todaySteps, activeCalories, expectedDeficit, remaining, notify,
   } = useApp();
   const today = todayKey();
   const location = useLocation();
+  const [weekStart, setWeekStart] = useState(() => mondayOf(today));
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [recognizing, setRecognizing] = useState(false);
   const [result, setResult] = useState<RecognitionResult | null>(null);
   const [photoMeal, setPhotoMeal] = useState<MealType>(() => getMealByTime());
   const [photoAmount, setPhotoAmount] = useState('1');
   const [manualMeal, setManualMeal] = useState<MealType | null>(null);
-  const [form, setForm] = useState({ name: '', calories: '', amount: '1', protein: '', carbs: '', fat: '', honest: false });
+  const [form, setForm] = useState({ name: '', calories: '', amount: '1', honest: false });
   const [editing, setEditing] = useState<EditState | null>(null);
   const [editForm, setEditForm] = useState({ name: '', calories: '', amount: '1', meal: 'lunch' as MealType, time: '' });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -56,7 +56,6 @@ export default function RecordPage() {
   const [cupLabel, setCupLabel] = useState(state.waterCup.label);
   const [cupCapacity, setCupCapacity] = useState(String(state.waterCup.capacity));
   const [cupColor, setCupColor] = useState(state.waterCup.color);
-  const [healthOpen, setHealthOpen] = useState(false);
   const photoInput = useRef<HTMLInputElement>(null);
   const timelineInput = useRef<HTMLInputElement>(null);
 
@@ -64,6 +63,20 @@ export default function RecordPage() {
     const navState = location.state as { focus?: string } | null;
     if (navState?.focus === 'photo') photoInput.current?.click();
   }, [location.state]);
+
+  const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return { key, day: d.getDate(), weekday: weekNames[i] };
+  }), [weekStart]);
+
+  const weekStats = useMemo(() => {
+    const totals = weekDates.map((d) => state.logs[d.key]?.records.reduce((sum, r) => sum + r.calories, 0) ?? 0).filter((n) => n > 0);
+    const perfect = weekDates.filter((d) => (state.logs[d.key]?.records.length ?? 0) >= 3).length;
+    const avg = totals.length ? Math.round(totals.reduce((a, b) => a + (state.calorieGoal - b), 0) / totals.length) : 0;
+    return { avg, perfect };
+  }, [weekDates, state.logs, state.calorieGoal]);
 
   const viewDate = useMemo(() => {
     const d = new Date(`${today}T00:00:00`);
@@ -74,15 +87,17 @@ export default function RecordPage() {
   const selectedLog = selectedDate ? state.logs[selectedDate] : undefined;
 
   const grouped = useMemo(() => {
-    const map = Object.fromEntries(mealOrder.map((meal) => [meal, [] as FoodRecord[]])) as Record<MealType, FoodRecord[]>;
+    const map = Object.fromEntries(mainMeals.map((meal) => [meal, [] as FoodRecord[]])) as Record<MealType, FoodRecord[]>;
     todayLog.records.forEach((record) => {
       const meal = inferMeal(record);
-      map[meal].push(record);
+      if (map[meal]) map[meal].push(record);
+      else map.snack.push(record);
     });
     return map;
   }, [todayLog.records]);
 
-  const percent = Math.min(100, Math.round((todayWaterMl / state.waterGoal) * 100));
+  const waterPercent = Math.min(100, Math.round((todayWaterMl / state.waterGoal) * 100));
+  const caloriePercent = Math.min(100, Math.round((todayTotal / state.calorieGoal) * 100));
 
   const handlePhoto = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,14 +105,9 @@ export default function RecordPage() {
     const reader = new FileReader();
     reader.onload = async () => {
       const url = String(reader.result);
-      setPhotoPreview(url);
-      setResult(null);
-      setRecognizing(true);
-      setPhotoMeal(getMealByTime());
-      setPhotoAmount('1');
-      const recognized = await recognizeFood(url);
-      setResult(recognized);
-      setRecognizing(false);
+      setPhotoPreview(url); setResult(null); setRecognizing(true);
+      setPhotoMeal(getMealByTime()); setPhotoAmount('1');
+      setResult(await recognizeFood(url)); setRecognizing(false);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -106,141 +116,53 @@ export default function RecordPage() {
   const saveRecognized = () => {
     if (!result) return;
     const portion = Math.min(10, Math.max(0.1, Number(photoAmount) || 1));
-    dispatch({
-      type: 'ADD_RECORD',
-      record: {
-        id: uid(),
-        date: today,
-        name: result.name,
-        calories: Math.round(result.calories * portion),
-        protein: result.protein,
-        carbs: result.carbs,
-        fat: result.fat,
-        source: 'photo',
-        mealType: photoMeal,
-        time: currentTime(),
-        amount: portion,
-        sourceLabel: '拍照识别',
-        feedback: result.feedback,
-        honestStar: isLikelyCheat(result),
-      },
-    });
-    notify('照片里的这一餐记好啦');
-    setPhotoPreview(null);
-    setResult(null);
+    dispatch({ type: 'ADD_RECORD', record: {
+      id: uid(), date: today, name: result.name, calories: Math.round(result.calories * portion),
+      protein: result.protein, carbs: result.carbs, fat: result.fat, source: 'photo',
+      mealType: photoMeal, time: currentTime(), amount: portion, sourceLabel: '拍照识别',
+      feedback: result.feedback, honestStar: isLikelyCheat(result),
+    } });
+    notify('照片里的这一餐记好啦'); setPhotoPreview(null); setResult(null);
   };
 
   const saveManual = () => {
     const calories = Number(form.calories);
-    if (!manualMeal || !form.name.trim() || !calories || calories <= 0) {
-      notify('名字和热量填一下就可以啦');
-      return;
-    }
-    dispatch({
-      type: 'ADD_RECORD',
-      record: {
-        id: uid(),
-        date: today,
-        name: form.name.trim(),
-        calories,
-        protein: form.protein ? Number(form.protein) : undefined,
-        carbs: form.carbs ? Number(form.carbs) : undefined,
-        fat: form.fat ? Number(form.fat) : undefined,
-        source: 'manual',
-        mealType: manualMeal,
-        time: currentTime(),
-        amount: Math.min(10, Math.max(0.1, Number(form.amount) || 1)),
-        sourceLabel: '手动记录',
-        feedback: '亲手记下来的这一餐，分身给你比了个大拇指。',
-        honestStar: form.honest,
-      },
-    });
+    if (!manualMeal || !form.name.trim() || !calories) { notify('名字和热量填一下就可以啦'); return; }
+    dispatch({ type: 'ADD_RECORD', record: {
+      id: uid(), date: today, name: form.name.trim(), calories, source: 'manual',
+      mealType: manualMeal, time: currentTime(), amount: Math.min(10, Math.max(0.1, Number(form.amount) || 1)),
+      sourceLabel: '手动记录', feedback: '亲手记下来的这一餐，分身给你比了个大拇指。', honestStar: form.honest,
+    } });
     notify('记下来啦，收到一颗星');
-    setForm({ name: '', calories: '', amount: '1', protein: '', carbs: '', fat: '', honest: false });
-    setManualMeal(null);
+    setForm({ name: '', calories: '', amount: '1', honest: false }); setManualMeal(null);
   };
 
   const openEditor = (date: string, record: FoodRecord) => {
     setEditing({ date, record });
-    setEditForm({
-      name: record.name,
-      calories: String(record.calories),
-      amount: String(record.amount ?? 1),
-      meal: inferMeal(record),
-      time: record.time ?? currentTime(),
-    });
+    setEditForm({ name: record.name, calories: String(record.calories), amount: String(record.amount ?? 1), meal: inferMeal(record), time: record.time ?? currentTime() });
   };
 
   const saveEditor = () => {
     if (!editing) return;
     const calories = Number(editForm.calories);
-    if (!editForm.name.trim() || !calories || calories <= 0) {
-      notify('名字和热量要填一下哦');
-      return;
-    }
-    dispatch({
-      type: 'UPDATE_RECORD',
-      date: editing.date,
-      record: {
-        ...editing.record,
-        name: editForm.name.trim(),
-        calories,
-        amount: Math.min(10, Math.max(0.1, Number(editForm.amount) || 1)),
-        mealType: editForm.meal,
-        time: editForm.time,
-      },
-    });
-    notify('这条记录改好啦');
-    setEditing(null);
+    if (!editForm.name.trim() || !calories) { notify('名字和热量要填一下哦'); return; }
+    dispatch({ type: 'UPDATE_RECORD', date: editing.date, record: { ...editing.record, name: editForm.name.trim(), calories, amount: Math.min(10, Math.max(0.1, Number(editForm.amount) || 1)), mealType: editForm.meal, time: editForm.time } });
+    notify('这条记录改好啦'); setEditing(null);
   };
 
   const deleteRecord = () => {
     if (!editing) return;
     dispatch({ type: 'DELETE_RECORD', date: editing.date, recordId: editing.record.id });
-    notify('这条记录已删除');
-    setEditing(null);
+    notify('这条记录已删除'); setEditing(null);
   };
 
-  const addWater = () => {
-    dispatch({ type: 'ADD_WATER', date: today });
-    notify(`记下一杯 ${state.waterCup.capacity}ml`);
-  };
-
-  const undoWater = () => {
-    if (todayWaterCount === 0) return;
-    dispatch({ type: 'UNDO_WATER', date: today });
-    notify('撤销了最近一杯水');
-  };
-
-  const openCup = () => {
-    setCupLabel(state.waterCup.label);
-    setCupCapacity(String(state.waterCup.capacity));
-    setCupColor(state.waterCup.color);
-    setCupOpen(true);
-  };
-
+  const addWater = () => { dispatch({ type: 'ADD_WATER', date: today }); notify(`记下一杯 ${state.waterCup.capacity}ml`); };
+  const openCup = () => { setCupLabel(state.waterCup.label); setCupCapacity(String(state.waterCup.capacity)); setCupColor(state.waterCup.color); setCupOpen(true); };
   const saveCup = () => {
     const capacity = Number(cupCapacity);
-    if (!capacity || capacity < 50) {
-      notify('杯子容量至少 50ml');
-      return;
-    }
-    const cup: WaterCup = {
-      id: 'custom',
-      label: cupLabel.trim() || '我的杯子',
-      color: cupColor,
-      icon: 'cup',
-      capacity: Math.min(2000, capacity),
-      custom: true,
-    };
-    dispatch({ type: 'SET_WATER_CUP', cup });
-    setCupOpen(false);
-    notify(`水杯换成${cup.label}啦`);
-  };
-
-  const syncWalk = () => {
-    dispatch({ type: 'ADD_STEPS', date: today, steps: 600 });
-    notify(state.walkStarDates.includes(today) ? '又走了一段，舒服就好' : '走完十分钟，收到一颗星');
+    if (!capacity || capacity < 50) { notify('杯子容量至少 50ml'); return; }
+    const cup: WaterCup = { id: 'custom', label: cupLabel.trim() || '我的杯子', color: cupColor, icon: 'cup', capacity: Math.min(2000, capacity), custom: true };
+    dispatch({ type: 'SET_WATER_CUP', cup }); setCupOpen(false); notify(`水杯换成${cup.label}啦`);
   };
 
   const handleTimeline = (e: ChangeEvent<HTMLInputElement>) => {
@@ -256,140 +178,110 @@ export default function RecordPage() {
     <div className="space-y-4 px-4 pb-8 pt-6">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <p className="muted">记录不是考试，是给自己一个拥抱</p>
-          <h1 className="mt-1 text-2xl font-bold text-ink">今天也记下来啦</h1>
+          <p className="muted">记录与回看，都在这里</p>
+          <h1 className="mt-1 text-[28px] font-bold leading-tight text-ink">今天记下来啦</h1>
         </div>
-        <span className="chip shrink-0 bg-avocadoSoft text-xs text-avocadoInk">今日 +{todayStars} 星</span>
+        <span className="chip shrink-0 bg-coralSoft text-xs font-medium text-coralDeep"><Icon name="star" size={13} className="mr-1 inline" />今日 +{todayStars} 星</span>
       </header>
-
-      <div className="grid grid-cols-2 gap-2">
-        <button onClick={() => photoInput.current?.click()} className="card flex items-center gap-2 py-3 text-left active:scale-[0.98]">
-          <Icon name="camera" size={19} className="text-avocadoInk" />
-          <span className="text-sm font-medium text-ink">拍照识别</span>
-        </button>
-        <button onClick={() => setManualMeal(getMealByTime())} className="card flex items-center gap-2 py-3 text-left active:scale-[0.98]">
-          <Icon name="edit" size={19} className="text-avocadoInk" />
-          <span className="text-sm font-medium text-ink">手动记一餐</span>
-        </button>
-        <button onClick={addWater} className="card flex items-center gap-2 py-3 text-left active:scale-[0.98]">
-          <Icon name="cup" size={19} className="text-avocadoInk" />
-          <span className="text-sm font-medium text-ink">记一杯水</span>
-        </button>
-        <button onClick={syncWalk} className="card flex items-center gap-2 py-3 text-left active:scale-[0.98]">
-          <Icon name="walk" size={19} className="text-avocadoInk" />
-          <span className="text-sm font-medium text-ink">走十分钟</span>
-        </button>
-      </div>
 
       <section className="card space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="section-title">喝水小杯</h2>
-          <span className="muted">{todayWaterMl} / {state.waterGoal} ml</span>
+          <span className="text-sm font-semibold text-ink">{weekStart.getFullYear()}年 {weekStart.getMonth() + 1}月</span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; })} className="icon-btn h-8 w-8" aria-label="上一周"><Icon name="chevronLeft" size={16} /></button>
+            <button onClick={() => setWeekStart(mondayOf(today))} className="chip bg-warm px-2.5 py-1.5 text-[11px] text-ink">本周</button>
+            <button onClick={() => setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; })} className="icon-btn h-8 w-8" aria-label="下一周"><Icon name="chevronRight" size={16} /></button>
+          </div>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-white">
-          <div className="h-full rounded-full bg-avocado transition-all duration-300" style={{ width: `${percent}%` }} />
+        <div className="grid grid-cols-7 gap-1">
+          {weekDates.map((date) => {
+            const isToday = date.key === today;
+            const log = state.logs[date.key];
+            const hasRecord = !!log?.records.length;
+            return (
+              <div key={date.key} className="flex flex-col items-center">
+                <span className={`mb-1 text-[10px] ${isToday ? 'text-avocado' : 'text-muted'}`}>{isToday ? '今天' : date.weekday}</span>
+                <button onClick={() => setSelectedDate(date.key)} className={`grid h-9 w-9 place-items-center rounded-full text-sm font-semibold transition-colors active:scale-95 ${isToday ? 'bg-avocado text-white' : 'text-ink hover:bg-warm'}`}>{date.day}</button>
+                <span className={`mt-1 h-1.5 w-1.5 rounded-full ${log?.isCheatDay ? 'bg-coral' : hasRecord ? 'bg-avocado' : 'bg-transparent'}`} />
+              </div>
+            );
+          })}
         </div>
-        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-          {cupPresets.map((cup) => (
-            <button
-              key={cup.id}
-              onClick={() => { dispatch({ type: 'SET_WATER_CUP', cup }); notify(`水杯换成${cup.label}啦`); }}
-              className={`chip shrink-0 text-xs ${state.waterCup.id === cup.id ? 'bg-avocado text-avocadoInk' : 'bg-white text-muted'}`}
-            >
-              {cup.label} · {cup.capacity}ml
-            </button>
-          ))}
-          <button onClick={openCup} className={`chip shrink-0 text-xs ${state.waterCup.custom ? 'bg-avocado text-avocadoInk' : 'bg-white text-muted'}`}>
-            自定义杯子
+        <div className="flex items-center justify-between rounded-2xl bg-warm px-3 py-2.5">
+          <span className="muted">本周平均热量差 · 已完整记录 {weekStats.perfect} 天</span>
+          <span className="text-sm font-bold text-avocado">{weekStats.avg} kcal</span>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-3 gap-2">
+        <button onClick={() => photoInput.current?.click()} className="flex flex-col items-start gap-2 rounded-[20px] bg-avocadoSoft p-3 text-left shadow-card active:scale-[0.98]">
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-avocado"><Icon name="camera" size={18} /></span>
+          <span><span className="block text-sm font-semibold text-ink">拍照识别</span><span className="muted">拍一下就好</span></span>
+        </button>
+        <button onClick={() => setManualMeal(getMealByTime())} className="flex flex-col items-start gap-2 rounded-[20px] bg-coralSoft p-3 text-left shadow-card active:scale-[0.98]">
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-coral"><Icon name="edit" size={18} /></span>
+          <span><span className="block text-sm font-semibold text-ink">手动记一餐</span><span className="muted">自己选更准确</span></span>
+        </button>
+        <div className="relative flex flex-col items-start gap-2 rounded-[20px] bg-water p-3 text-left shadow-card">
+          <button onClick={openCup} className="absolute right-2 top-2 text-waterInk" aria-label="水杯设置"><Icon name="settings" size={15} /></button>
+          <button onClick={addWater} className="flex w-full flex-col items-start gap-2 text-left active:scale-[0.98]">
+            <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-waterInk"><Icon name="cup" size={18} /></span>
+            <span><span className="block text-sm font-semibold text-ink">喝水</span><span className="muted">{todayWaterMl}/{state.waterGoal} ml</span></span>
           </button>
+        </div>
+      </div>
+
+      <section className="card space-y-4">
+        <div>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="muted">今日摄入</p>
+              <p className="mt-1 text-[26px] font-bold leading-none text-ink">{todayTotal} <span className="text-sm font-normal text-muted">/ {state.calorieGoal} kcal</span></p>
+            </div>
+            <span className={`text-xs ${remaining >= 0 ? 'text-avocado' : 'text-coralDeep'}`}>{remaining >= 0 ? `还差 ${remaining} kcal` : `多出 ${Math.abs(remaining)} kcal`}</span>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-warm"><div className="h-full rounded-full bg-avocado transition-all" style={{ width: `${caloriePercent}%` }} /></div>
+          <p className="muted mt-2">热量差基于基础代谢与活动量估算，仅供参考。</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <button onClick={addWater} className="btn-primary">记一杯 · {state.waterCup.capacity}ml</button>
-          <button onClick={undoWater} disabled={todayWaterCount === 0} className="btn-secondary">
-            <span className="inline-flex items-center justify-center gap-1.5"><Icon name="undo" size={15} />撤销</span>
-          </button>
+          <div className="rounded-2xl bg-warm p-3">
+            <p className="muted">活动消耗</p>
+            <p className="mt-1 text-lg font-bold text-ink">{activeCalories} <span className="text-xs font-normal text-muted">kcal</span></p>
+            <p className="muted">晚饭后快走 25 分钟 · {todaySteps} 步</p>
+          </div>
+          <div className="rounded-2xl bg-warm p-3">
+            <p className="muted">预计热量差</p>
+            <p className="mt-1 text-lg font-bold text-ink">{expectedDeficit} <span className="text-xs font-normal text-muted">kcal</span></p>
+            <p className="muted">基础代谢 + 活动 - 摄入</p>
+          </div>
         </div>
       </section>
 
       <section className="card space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="section-title">今日三餐</h2>
-          <span className="muted">{todayTotal} / {state.calorieGoal} kcal</span>
+          <span className="muted">{todayTotal} kcal</span>
         </div>
-        <p className="muted">{remaining >= 0 ? `距离目标还剩 ${remaining} kcal` : `今天多出 ${Math.abs(remaining)} kcal，也没关系`}</p>
-        {remaining < 0 && !todayLog.isCheatDay && (
-          <button
-            onClick={() => { dispatch({ type: 'MARK_CHEAT', date: today }); notify('放纵餐已标记，诚实记录值得一颗星'); }}
-            className="btn-secondary w-full text-xs"
-          >
-            标记为放纵餐 · +1 星
-          </button>
-        )}
-        {todayLog.isCheatDay && <p className="rounded-2xl bg-coralSoft p-2.5 text-xs text-coralInk">今天已标记为放纵餐，快乐也被认真收下了。</p>}
-
-        <div className="space-y-2">
-          {mealOrder.map((meal) => {
-            const records = grouped[meal];
-            const total = records.reduce((sum, r) => sum + r.calories, 0);
-            return (
-              <div key={meal} className="rounded-2xl bg-warm p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-ink">{mealLabels[meal]}</p>
-                    <p className="muted">{total} kcal · {records.length} 项</p>
-                  </div>
-                  <button
-                    onClick={() => setManualMeal(meal)}
-                    className="icon-btn h-8 w-8 bg-avocado text-avocadoInk"
-                    aria-label={`添加${mealLabels[meal]}`}
-                  >
-                    <Icon name="plus" size={17} />
-                  </button>
-                </div>
-                {records.length > 0 && (
-                  <div className="mt-2 space-y-1.5">
-                    {records.map((record) => (
-                      <button
-                        key={record.id}
-                        onClick={() => openEditor(today, record)}
-                        className="flex w-full items-center justify-between gap-2 rounded-xl bg-white px-2.5 py-2 text-left active:scale-[0.99]"
-                      >
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <Icon name={record.source === 'photo' ? 'camera' : 'edit'} size={13} className="shrink-0 text-muted" />
-                          <span className="truncate text-xs text-ink">{record.name}</span>
-                          <span className="shrink-0 text-[10px] text-muted">{record.amount ?? 1}份</span>
-                        </span>
-                        <span className="shrink-0 text-xs font-medium text-ink">{record.calories} kcal</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+        {mainMeals.map((meal) => {
+          const records = grouped[meal];
+          const total = records.reduce((sum, r) => sum + r.calories, 0);
+          return (
+            <div key={meal} className="flex items-center gap-3 rounded-2xl bg-warm p-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white text-lg">{mealEmoji[meal]}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-ink">{mealLabels[meal]}</p>
+                <p className="muted truncate">{records.length ? records.map((r) => r.name).join('、') : meal === 'snack' ? '想吃就记，不用克制' : '还没有记录'}</p>
               </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="card space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="section-title">陪分身走走</h2>
-          <span className="muted">{todaySteps} 步</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-avocadoSoft text-avocadoInk"><Icon name="walk" size={21} /></span>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-ink">十分钟小散步</p>
-            <p className="muted">走完就能领今天的走路星星</p>
-          </div>
-          <button onClick={syncWalk} className="btn-secondary px-3 py-2 text-xs">同步</button>
-        </div>
-        <button
-          onClick={() => setHealthOpen(true)}
-          className="flex w-full items-center justify-between rounded-2xl bg-warm px-3 py-2.5 text-xs text-ink active:scale-[0.99]"
-        >
-          <span>{state.healthConnected ? '健康数据已连接' : '连接健康数据'}</span>
-          <Icon name="chevronRight" size={15} className="text-muted" />
-        </button>
+              {records.length > 0 ? (
+                <button onClick={() => openEditor(today, records[0])} className="text-sm font-bold text-ink">{total} kcal</button>
+              ) : (
+                <button onClick={() => setManualMeal(meal)} className="grid h-8 w-8 place-items-center rounded-full bg-avocado text-white shadow-card" aria-label={`添加${mealLabels[meal]}`}><Icon name="plus" size={17} /></button>
+              )}
+            </div>
+          );
+        })}
+        {todayLog.isCheatDay && <p className="rounded-2xl bg-coralSoft p-3 text-xs text-coralDeep">今天已标记为放纵餐，快乐也被认真收下了。</p>}
+        {remaining < 0 && !todayLog.isCheatDay && <button onClick={() => { dispatch({ type: 'MARK_CHEAT', date: today }); notify('放纵餐已标记，诚实记录值得一颗星'); }} className="btn-secondary w-full text-xs">标记为放纵餐 · +1 星</button>}
       </section>
 
       <section className="card space-y-3">
@@ -401,62 +293,21 @@ export default function RecordPage() {
             <button onClick={() => setMonthOffset((m) => m + 1)} className="icon-btn h-8 w-8" aria-label="下个月"><Icon name="chevronRight" size={16} /></button>
           </div>
         </div>
-        <div className="grid grid-cols-7 text-center text-[10px] text-muted">
-          {['日', '一', '二', '三', '四', '五', '六'].map((w) => <span key={w}>{w}</span>)}
-        </div>
         <div className="grid grid-cols-7 gap-1">
-          {cells.map((cell, i) => {
-            if (!cell.key) return <div key={`blank-${i}`} />;
-            const log = state.logs[cell.key];
-            const total = log?.records.reduce((sum, r) => sum + r.calories, 0) ?? 0;
-            const isToday = cell.key === today;
-            return (
-              <button
-                key={cell.key}
-                onClick={() => setSelectedDate(cell.key)}
-                className={`flex aspect-square flex-col items-center justify-center rounded-2xl text-[11px] active:scale-95 ${
-                  isToday ? 'bg-avocado text-avocadoInk' : 'bg-warm text-ink'
-                }`}
-              >
-                <span>{cell.day}</span>
-                <span className="mt-0.5 h-3 text-[8px] leading-3">{log?.isCheatDay ? '★' : total > 0 ? total : ''}</span>
-              </button>
-            );
-          })}
+          {cells.map((cell, i) => cell.key ? (
+            <button key={cell.key} onClick={() => setSelectedDate(cell.key)} className={`flex aspect-square flex-col items-center justify-center rounded-2xl text-[11px] ${cell.key === today ? 'bg-avocado text-white' : 'bg-warm text-ink'}`}><span>{cell.day}</span><span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-avocado" /></button>
+          ) : <div key={`blank-${i}`} />)}
         </div>
-        <p className="muted">星标 = 放纵餐 · 数字 = 当日热量</p>
-      </section>
-
-      <section className="card space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="section-title">照片小记</h2>
-          <span className="muted">只留给自己看</span>
+          <span className="muted">照片只留给自己看</span>
+          <button onClick={() => timelineInput.current?.click()} className="text-xs text-avocado">添加照片</button>
         </div>
-        <input ref={timelineInput} type="file" accept="image/*" onChange={handleTimeline} className="hidden" />
-        <button onClick={() => timelineInput.current?.click()} className="btn-secondary w-full text-xs">添加一张照片</button>
-        {pendingPhoto && (
-          <div className="space-y-2">
-            <img src={pendingPhoto} alt="待保存" className="h-40 w-full rounded-2xl object-cover" />
-            <button
-              onClick={() => { dispatch({ type: 'ADD_PHOTO', photo: { date: today, imageDataUrl: pendingPhoto } }); setPendingPhoto(null); notify('照片收好啦'); }}
-              className="btn-primary w-full text-xs"
-            >
-              保存照片
-            </button>
-          </div>
-        )}
-        {state.photoTimeline.length === 0 ? (
-          <p className="py-3 text-center text-xs text-muted">还没有照片，随时都可以开始。</p>
-        ) : (
-          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-            {state.photoTimeline.map((photo, i) => (
-              <img key={`${photo.date}-${i}`} src={photo.imageDataUrl} alt={formatDateCN(photo.date, false)} className="h-20 w-20 shrink-0 rounded-2xl object-cover" />
-            ))}
-          </div>
-        )}
+        {state.photoTimeline.length > 0 && <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{state.photoTimeline.map((photo, i) => <img key={`${photo.date}-${i}`} src={photo.imageDataUrl} alt={formatDateCN(photo.date, false)} className="h-16 w-16 shrink-0 rounded-2xl object-cover" />)}</div>}
+        {pendingPhoto && <div className="space-y-2"><img src={pendingPhoto} alt="待保存" className="h-36 w-full rounded-2xl object-cover" /><button onClick={() => { dispatch({ type: 'ADD_PHOTO', photo: { date: today, imageDataUrl: pendingPhoto } }); setPendingPhoto(null); notify('照片收好啦'); }} className="btn-primary w-full text-xs">保存照片</button></div>}
       </section>
 
       <input ref={photoInput} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
+      <input ref={timelineInput} type="file" accept="image/*" onChange={handleTimeline} className="hidden" />
 
       <Modal open={!!manualMeal} onClose={() => setManualMeal(null)} title={manualMeal ? `添加${mealLabels[manualMeal]}` : ''}>
         <div className="space-y-3">
@@ -464,113 +315,46 @@ export default function RecordPage() {
           <div className="grid grid-cols-2 gap-2">
             <input value={form.calories} onChange={(e) => setForm({ ...form, calories: e.target.value })} placeholder="热量 kcal" inputMode="numeric" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
             <input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="份数" inputMode="decimal" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
-            <input value={form.protein} onChange={(e) => setForm({ ...form, protein: e.target.value })} placeholder="蛋白质 g（选填）" inputMode="numeric" className="rounded-2xl bg-warm px-3 py-2.5 text-xs text-ink outline-none" />
-            <input value={form.carbs} onChange={(e) => setForm({ ...form, carbs: e.target.value })} placeholder="碳水 g（选填）" inputMode="numeric" className="rounded-2xl bg-warm px-3 py-2.5 text-xs text-ink outline-none" />
-            <input value={form.fat} onChange={(e) => setForm({ ...form, fat: e.target.value })} placeholder="脂肪 g（选填）" inputMode="numeric" className="col-span-2 rounded-2xl bg-warm px-3 py-2.5 text-xs text-ink outline-none" />
           </div>
-          <label className="flex items-center gap-2 text-xs text-ink/75">
-            <input type="checkbox" checked={form.honest} onChange={(e) => setForm({ ...form, honest: e.target.checked })} />
-            这是放纵餐，如实记录（额外 +1 星）
-          </label>
+          <label className="flex items-center gap-2 text-xs text-ink/75"><input type="checkbox" checked={form.honest} onChange={(e) => setForm({ ...form, honest: e.target.checked })} />这是放纵餐，如实记录（额外 +1 星）</label>
           <button onClick={saveManual} className="btn-primary w-full">记下来啦</button>
         </div>
       </Modal>
 
       <Modal open={!!photoPreview} onClose={() => { setPhotoPreview(null); setResult(null); }} title="拍照识别">
         <div className="space-y-3">
-          <p className="muted leading-relaxed">演示识别，接口预留于 recognizeFood.ts，正式接入后页面无需改动。</p>
+          <p className="muted">演示识别，接口预留于 recognizeFood.ts。</p>
           {photoPreview && <img src={photoPreview} alt="食物预览" className="h-44 w-full rounded-2xl object-cover" />}
-          <div className="flex flex-wrap gap-2">
-            {mealOrder.filter((meal) => meal !== 'unknown').map((meal) => (
-              <button key={meal} onClick={() => setPhotoMeal(meal)} className={`chip text-xs ${photoMeal === meal ? 'bg-avocado text-avocadoInk' : 'bg-warm text-muted'}`}>
-                {mealLabels[meal]}
-              </button>
-            ))}
-          </div>
+          <div className="flex flex-wrap gap-2">{(['breakfast', 'lunch', 'dinner', 'snack', 'late'] as MealType[]).map((item) => <button key={item} onClick={() => setPhotoMeal(item)} className={`chip text-xs ${photoMeal === item ? 'bg-avocado text-white' : 'bg-warm text-muted'}`}>{mealLabels[item]}</button>)}</div>
           <input value={photoAmount} onChange={(e) => setPhotoAmount(e.target.value)} inputMode="decimal" placeholder="份数" className="w-full rounded-2xl bg-warm px-4 py-2.5 text-sm text-ink outline-none" />
-          {recognizing ? (
-            <p className="py-6 text-center text-sm text-muted">正在偷偷看图…</p>
-          ) : result ? (
-            <div className="space-y-2 rounded-2xl bg-warm p-3">
-              <p className="font-semibold text-ink">识别到：{result.name}</p>
-              <p className="text-xs text-ink/75">约 {result.calories} kcal · 蛋白 {result.protein}g / 碳水 {result.carbs}g / 脂肪 {result.fat}g</p>
-              <p className="text-xs text-avocadoInk">{result.feedback}</p>
-              <button onClick={saveRecognized} className="btn-primary w-full">就它了，存入记录</button>
-            </div>
-          ) : null}
+          {recognizing ? <p className="py-6 text-center text-sm text-muted">正在偷偷看图…</p> : result ? <div className="space-y-2 rounded-2xl bg-warm p-3"><p className="font-semibold text-ink">识别到：{result.name}</p><p className="text-xs text-ink/75">约 {result.calories} kcal</p><p className="text-xs text-avocado">{result.feedback}</p><button onClick={saveRecognized} className="btn-primary w-full">就它了，存入记录</button></div> : null}
         </div>
       </Modal>
 
       <Modal open={!!editing} onClose={() => setEditing(null)} title="修改这一餐">
-        {editing && (
-          <div className="space-y-3">
-            <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
-            <div className="grid grid-cols-2 gap-2">
-              <input value={editForm.calories} onChange={(e) => setEditForm({ ...editForm, calories: e.target.value })} inputMode="numeric" placeholder="热量 kcal" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
-              <input value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} inputMode="decimal" placeholder="份数" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
-              <input value={editForm.time} onChange={(e) => setEditForm({ ...editForm, time: e.target.value })} placeholder="时间 HH:mm" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
-              <select value={editForm.meal} onChange={(e) => setEditForm({ ...editForm, meal: e.target.value as MealType })} className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none">
-                {mealOrder.filter((meal) => meal !== 'unknown').map((meal) => <option key={meal} value={meal}>{mealLabels[meal]}</option>)}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={deleteRecord} className="btn-secondary text-coralInk">删除</button>
-              <button onClick={saveEditor} className="btn-primary">保存修改</button>
-            </div>
+        {editing && <div className="space-y-3">
+          <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
+          <div className="grid grid-cols-2 gap-2">
+            <input value={editForm.calories} onChange={(e) => setEditForm({ ...editForm, calories: e.target.value })} inputMode="numeric" placeholder="热量 kcal" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
+            <input value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} inputMode="decimal" placeholder="份数" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
+            <input value={editForm.time} onChange={(e) => setEditForm({ ...editForm, time: e.target.value })} placeholder="时间 HH:mm" className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none" />
+            <select value={editForm.meal} onChange={(e) => setEditForm({ ...editForm, meal: e.target.value as MealType })} className="rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none">{(['breakfast', 'lunch', 'dinner', 'snack', 'late'] as MealType[]).map((meal) => <option key={meal} value={meal}>{mealLabels[meal]}</option>)}</select>
           </div>
-        )}
+          <div className="grid grid-cols-2 gap-2"><button onClick={deleteRecord} className="btn-secondary text-coral">删除</button><button onClick={saveEditor} className="btn-primary">保存修改</button></div>
+        </div>}
       </Modal>
 
       <Modal open={!!selectedDate} onClose={() => setSelectedDate(null)} title={selectedDate ? formatDateCN(selectedDate) : ''}>
-        {selectedLog ? (
-          <div className="space-y-3">
-            <p className="text-sm text-ink">这一天共记录 {selectedLog.records.length} 餐。</p>
-            <div className="space-y-2">
-              {selectedLog.records.map((record) => (
-                <button key={record.id} onClick={() => { setSelectedDate(null); openEditor(selectedDate!, record); }} className="flex w-full items-center justify-between rounded-2xl bg-warm px-3 py-2.5 text-left text-xs">
-                  <span className="truncate text-ink">{record.name}</span>
-                  <span className="shrink-0 font-medium text-ink">{record.calories} kcal</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-muted">这一天还空空的，随时可以补记。</p>
-        )}
+        {selectedLog ? <div className="space-y-2">{selectedLog.records.map((record) => <button key={record.id} onClick={() => { setSelectedDate(null); openEditor(selectedDate!, record); }} className="flex w-full items-center justify-between rounded-2xl bg-warm px-3 py-2.5 text-left text-xs"><span className="truncate text-ink">{record.name}</span><span className="font-medium text-ink">{record.calories} kcal</span></button>)}</div> : <p className="text-sm text-muted">这一天还空空的，随时可以补记。</p>}
       </Modal>
 
       <Modal open={cupOpen} onClose={() => setCupOpen(false)} title="自定义水杯">
         <div className="space-y-3">
           <input value={cupLabel} onChange={(e) => setCupLabel(e.target.value)} placeholder="杯子名字" className="w-full rounded-2xl bg-warm px-4 py-3 text-sm text-ink outline-none" />
           <input value={cupCapacity} onChange={(e) => setCupCapacity(e.target.value)} inputMode="numeric" placeholder="容量 ml" className="w-full rounded-2xl bg-warm px-4 py-3 text-sm text-ink outline-none" />
-          <div className="flex gap-2">
-            {cupColors.map((color) => (
-              <button
-                key={color}
-                onClick={() => setCupColor(color)}
-                className={`h-8 w-8 rounded-full border-2 transition-transform active:scale-90 ${cupColor === color ? 'border-ink' : 'border-transparent'}`}
-                style={{ backgroundColor: color }}
-                aria-label={`选择颜色 ${color}`}
-              />
-            ))}
-          </div>
+          <div className="flex gap-2">{cupColors.map((color) => <button key={color} onClick={() => setCupColor(color)} className={`h-8 w-8 rounded-full border-2 ${cupColor === color ? 'border-ink' : 'border-transparent'}`} style={{ backgroundColor: color }} aria-label={`选择颜色 ${color}`} />)}</div>
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{cupPresets.map((cup) => <button key={cup.id} onClick={() => { dispatch({ type: 'SET_WATER_CUP', cup }); setCupOpen(false); notify(`水杯换成${cup.label}啦`); }} className="chip shrink-0 bg-warm text-xs text-ink">{cup.label} · {cup.capacity}ml</button>)}</div>
           <button onClick={saveCup} className="btn-primary w-full">用这个杯子</button>
-        </div>
-      </Modal>
-
-      <Modal open={healthOpen} onClose={() => setHealthOpen(false)} title="健康数据">
-        <div className="space-y-4 text-sm">
-          <p className="leading-relaxed text-ink/80">演示版会模拟同步一段散步数据。绝不读取你的健康档案，也不需要授权真实信息。</p>
-          <button
-            onClick={() => {
-              dispatch({ type: 'SET_HEALTH_CONNECTED', connected: !state.healthConnected });
-              notify(state.healthConnected ? '已断开模拟同步' : '模拟同步已连接');
-              setHealthOpen(false);
-            }}
-            className={state.healthConnected ? 'btn-secondary w-full' : 'btn-primary w-full'}
-          >
-            {state.healthConnected ? '断开模拟同步' : '连接模拟同步'}
-          </button>
         </div>
       </Modal>
     </div>
