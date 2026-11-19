@@ -1,0 +1,12 @@
+﻿STARTED
+
+uploaded cred-list.txt
+
+uploaded deploy-api-status.txt
+
+uploaded .github/workflows/deploy.yml
+
+uploaded .gitignore
+
+uploaded index.html
+
