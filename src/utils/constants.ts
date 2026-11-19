@@ -1,4 +1,5 @@
-import type { AppState, DayLog } from '../types';
+import { cupPresets } from '../data/cups';
+import type { AppState, DayLog, WaterLog } from '../types';
 
 export const STORAGE_KEY = 'chanban-app-state-v1';
 
@@ -7,6 +8,8 @@ export const DEFAULT_EQUIPPED = {
   hair: 'bob',
   skin: 'warm',
   outfit: 'hoodie',
+  bottom: 'shortsMix',
+  shoes: 'sneaker',
   accessory: 'none',
   name: '小馋',
   personality: 'gentle' as const,
@@ -32,6 +35,19 @@ export function initialState(): AppState {
     height: 165,
     weightRecords: {},
     waterByDate: {},
+    waterLogs: [],
+    waterCup: { ...cupPresets[0] },
+    waterGoal: 1600,
+    stepsByDate: {},
+    healthConnected: false,
+    starLedger: [],
+    dailyCheerDates: [],
+    waterStarDates: [],
+    walkStarDates: [],
+    unseenItems: [],
+    lastBoxResult: null,
+    favoriteLooks: [],
+    reminders: { water: true, meals: true, cheer: false },
     photoTimeline: [],
     streakDays: 0,
     streakSevenRewarded: false,
@@ -60,6 +76,18 @@ export function loadState(): AppState {
       equipped.hair = 'bob';
       equipped.outfit = 'hoodie';
     }
+
+    let waterLogs = parsed.waterLogs ?? [];
+    if (waterLogs.length === 0 && parsed.waterByDate && Object.keys(parsed.waterByDate).length > 0) {
+      const migrated: WaterLog[] = [];
+      Object.entries(parsed.waterByDate).forEach(([date, count]) => {
+        for (let i = 0; i < count; i += 1) {
+          migrated.push({ id: `migrate-${date}-${i}`, date, time: '09:00', amount: 200, cupId: 'mini' });
+        }
+      });
+      waterLogs = migrated;
+    }
+
     return {
       ...base,
       ...parsed,
@@ -73,6 +101,20 @@ export function loadState(): AppState {
       height: parsed.height ?? base.height,
       weightRecords: parsed.weightRecords ?? {},
       waterByDate: parsed.waterByDate ?? {},
+      waterLogs,
+      waterCup: parsed.waterCup ?? base.waterCup,
+      waterGoal: parsed.waterGoal ?? base.waterGoal,
+      stepsByDate: parsed.stepsByDate ?? {},
+      healthConnected: parsed.healthConnected ?? false,
+      starLedger: parsed.starLedger ?? [],
+      dailyCheerDates: parsed.dailyCheerDates ?? [],
+      waterStarDates: parsed.waterStarDates ?? [],
+      walkStarDates: parsed.walkStarDates ?? [],
+      unseenItems: parsed.unseenItems ?? [],
+      lastBoxResult: parsed.lastBoxResult ?? null,
+      lastBoxNewItemId: parsed.lastBoxNewItemId,
+      favoriteLooks: parsed.favoriteLooks ?? [],
+      reminders: { ...base.reminders, ...parsed.reminders },
       appearanceVersion: 2,
     };
   } catch {
