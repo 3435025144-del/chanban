@@ -527,7 +527,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {guideVisible && (
         <div className="fixed bottom-[88px] left-1/2 z-50 w-[320px] max-w-[calc(100%-24px)] -translate-x-1/2 animate-pop-in">
           <div className="relative rounded-[20px] bg-card p-4 shadow-modal">
-            <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 bg-card" />
+            <span className="absolute -bottom-2 left-[calc(50%+46.875px)] h-4 w-4 -translate-x-1/2 rotate-45 bg-card" />
             <p className="relative text-[13px] leading-relaxed text-text/85">
               记录一餐，你的小分身就能得一颗星，攒星星可以去分身小屋换装哦！
             </p>
