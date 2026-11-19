@@ -78,6 +78,17 @@ export interface ReminderSettings {
   cheer: boolean;
 }
 
+export interface MoodLog {
+  mood: string;
+  note?: string;
+}
+
+export interface TasteProfile {
+  flavor: string;
+  avoid: string[];
+  goal: string;
+}
+
 export interface DayLog {
   date: string;
   records: FoodRecord[];
@@ -117,6 +128,10 @@ export interface AppState {
   dailyCheerDates: string[];
   waterStarDates: string[];
   walkStarDates: string[];
+  moodStarDates: string[];
+  moodLogs: Record<string, MoodLog>;
+  tasteProfile: TasteProfile;
+  activeCaloriesByDate: Record<string, number>;
   unseenItems: string[];
   lastBoxResult: DrawResult[] | null;
   lastBoxNewItemId?: string;
