@@ -520,18 +520,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={value}>
       {children}
       {notice && (
-        <div className="pointer-events-none fixed left-1/2 top-5 z-[80] -translate-x-1/2 rounded-2xl bg-ink px-4 py-2.5 text-[13px] text-white shadow-modal animate-pop-in">
+        <div className="pointer-events-none fixed left-1/2 top-5 z-[80] -translate-x-1/2 rounded-2xl bg-text px-4 py-2.5 text-[13px] text-primaryText shadow-modal animate-pop-in">
           {notice}
         </div>
       )}
       {guideVisible && (
         <div className="fixed bottom-[88px] left-1/2 z-50 w-[320px] max-w-[calc(100%-24px)] -translate-x-1/2 animate-pop-in">
-          <div className="relative rounded-[20px] bg-white p-4 shadow-modal">
-            <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 bg-white" />
-            <p className="relative text-[13px] leading-relaxed text-ink/85">
+          <div className="relative rounded-[20px] bg-card p-4 shadow-modal">
+            <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 bg-card" />
+            <p className="relative text-[13px] leading-relaxed text-text/85">
               记录一餐，你的小分身就能得一颗星，攒星星可以去分身小屋换装哦！
             </p>
-            <button onClick={dismissGuide} className="relative mt-3 rounded-full bg-avocado px-4 py-1.5 text-xs font-medium text-white">知道了</button>
+            <button onClick={dismissGuide} className="relative mt-3 rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primaryText">知道了</button>
           </div>
         </div>
       )}
