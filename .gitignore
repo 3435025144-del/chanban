@@ -18,6 +18,8 @@ cloudflared.exe
 build-out.txt
 build-err.txt
 build-status.txt
+deploy-status.txt
+*.vbs
 gh-api-check.txt
 cred-check.txt
 proc-check.txt
