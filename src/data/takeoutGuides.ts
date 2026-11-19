@@ -8,14 +8,16 @@ export interface NearbyMerchant {
   distance: string;
   category: string;
   frequency: number;
+  recommend: string;
+  avoid: string;
 }
 
 export const nearbyMerchants: NearbyMerchant[] = [
-  { id: 'n1', name: '青禾轻食工坊', type: '轻食沙拉', dish: '鸡胸藜麦能量碗', avgCalories: 420, emoji: '🥗', distance: '320m', category: '轻食', frequency: 12 },
-  { id: 'n2', name: '一碗暖汤', type: '中式汤品', dish: '菌菇豆腐汤 + 半份糙米', avgCalories: 310, emoji: '🍲', distance: '560m', category: '汤品', frequency: 8 },
-  { id: 'n3', name: '海边小面', type: '面食', dish: '清汤荞麦面加卤蛋', avgCalories: 450, emoji: '🍜', distance: '800m', category: '面食', frequency: 15 },
-  { id: 'n4', name: '米粒研究室', type: '日式简餐', dish: '三文鱼茶泡饭', avgCalories: 480, emoji: '🍣', distance: '1.1km', category: '日式', frequency: 5 },
-  { id: 'n5', name: '果咔鲜果', type: '果饮甜品', dish: '无糖酸奶水果杯', avgCalories: 190, emoji: '🍓', distance: '240m', category: '甜品', frequency: 21 },
+  { id: 'n1', name: '青禾轻食工坊', type: '轻食沙拉', dish: '鸡胸藜麦能量碗', avgCalories: 420, emoji: '🥗', distance: '320m', category: '轻食', frequency: 12, recommend: '鸡胸藜麦碗少放沙拉酱，多加一份西兰花', avoid: '避开油炸豆腐和糖渍小番茄' },
+  { id: 'n2', name: '一碗暖汤', type: '中式汤品', dish: '菌菇豆腐汤 + 半份糙米', avgCalories: 310, emoji: '🍲', distance: '560m', category: '汤品', frequency: 8, recommend: '菌菇豆腐汤配半份糙米，暖胃又清爽', avoid: '汤里少放辣油，别勾芡' },
+  { id: 'n3', name: '海边小面', type: '面食', dish: '清汤荞麦面加卤蛋', avgCalories: 450, emoji: '🍜', distance: '800m', category: '面食', frequency: 15, recommend: '清汤荞麦面加卤蛋，青菜多要一份', avoid: '少喝汤底，钠含量偏高' },
+  { id: 'n4', name: '米粒研究室', type: '日式简餐', dish: '三文鱼茶泡饭', avgCalories: 480, emoji: '🍣', distance: '1.1km', category: '日式', frequency: 5, recommend: '三文鱼茶泡饭饭量减半，配一份温泉蛋', avoid: '少加照烧酱和腌小菜' },
+  { id: 'n5', name: '果咔鲜果', type: '果饮甜品', dish: '无糖酸奶水果杯', avgCalories: 190, emoji: '🍓', distance: '240m', category: '甜品', frequency: 21, recommend: '无糖酸奶水果杯加一份莓果，清爽解馋', avoid: '别选糖浆和炼乳口味' },
 ];
 
 export interface TakeoutGuide {
