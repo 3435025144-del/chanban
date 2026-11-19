@@ -55,7 +55,7 @@ export default function ProfilePage() {
 
       <section className="rounded-[24px] bg-gradient-to-br from-greenSoft to-greenSoft/40 p-4 shadow-card">
         <Link to="/avatar" className="flex items-center gap-3 active:scale-[0.99]">
-          <div className="shrink-0 rounded-[20px] bg-card p-1"><Avatar config={state.avatar.equipped} size={70} /></div>
+          <div className="shrink-0 overflow-hidden rounded-[20px] bg-card p-1"><Avatar config={state.avatar.equipped} size={70} /></div>
           <div className="min-w-0 flex-1">
             <p className="text-lg font-bold text-text">{state.avatar.equipped.name}</p>
             <p className="muted mt-0.5 leading-relaxed">谢谢你一直温柔地照顾自己，也愿意好好吃一顿。</p>
