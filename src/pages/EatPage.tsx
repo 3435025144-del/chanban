@@ -1,17 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import Icon, { type IconName } from '../components/Icon';
+import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
 import { ingredients } from '../data/ingredients';
 import { matchRecipes, recipes as allRecipes } from '../data/recipes';
 import { recommendationForMeal, recommendations } from '../data/recommendations';
 import { nearbyMerchants, takeoutGuides } from '../data/takeoutGuides';
+import type { MealType } from '../types';
 import { currentTime, getMealByTime, mealLabels } from '../utils/meal';
 import { todayKey } from '../utils/date';
 
 type Mode = 'recommend' | 'takeout' | 'cook' | 'nearby';
 type SortMode = 'calorie' | 'frequent';
+type Step = 'confirm' | 'result';
+
+interface Candidate {
+  id: string;
+  name: string;
+  emoji: string;
+  calories: number;
+  kind: string;
+}
 
 const modes: { id: Mode; label: string; icon: IconName }[] = [
   { id: 'takeout', label: '点外卖', icon: 'eat' },
@@ -41,11 +52,12 @@ interface InfoCardProps {
   recommendText: string;
   avoidLabel: string;
   avoidText: string;
+  onClick: () => void;
 }
 
-function InfoCard({ emoji, name, calories, iconClass, recommendLabel, recommendText, avoidLabel, avoidText }: InfoCardProps) {
+function InfoCard({ emoji, name, calories, iconClass, recommendLabel, recommendText, avoidLabel, avoidText, onClick }: InfoCardProps) {
   return (
-    <div className="card rounded-[22px]">
+    <button type="button" onClick={onClick} className="card w-full rounded-[22px] text-left transition-transform active:scale-[0.99]">
       <div className="flex items-center gap-3">
         <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-xl ${iconClass}`}>{emoji}</span>
         <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-text">{name}</span>
@@ -57,13 +69,14 @@ function InfoCard({ emoji, name, calories, iconClass, recommendLabel, recommendT
         <p className="text-xs leading-relaxed text-primary">{recommendLabel}：{recommendText}</p>
         <p className="text-xs leading-relaxed text-peachStrong">{avoidLabel}：{avoidText}</p>
       </div>
-    </div>
+    </button>
   );
 }
 
 export default function EatPage() {
   const { state, dispatch, todayLog, todayTotal, notify, showGuide, guideSeen } = useApp();
-  const [mode, setMode] = useState<Mode>('recommend');
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<Mode>('takeout');
   const [activeChips, setActiveChips] = useState<string[]>(['有点饿', '想吃热的']);
   const [recommendIndex, setRecommendIndex] = useState(0);
   const [query, setQuery] = useState('');
@@ -75,6 +88,10 @@ export default function EatPage() {
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [refreshTick, setRefreshTick] = useState(0);
   const [floatDelta, setFloatDelta] = useState<number | null>(null);
+  const [active, setActive] = useState<Candidate | null>(null);
+  const [step, setStep] = useState<Step>('confirm');
+  const [amount, setAmount] = useState('1');
+  const [meal, setMeal] = useState<MealType>(() => getMealByTime());
   const floatTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => () => window.clearTimeout(floatTimer.current), []);
@@ -171,6 +188,44 @@ export default function EatPage() {
     if (!guideSeen) showGuide();
     setRecommendIndex((i) => i + 1);
   };
+
+  const openRecord = (candidate: Candidate) => {
+    setActive(candidate);
+    setStep('confirm');
+    setAmount('1');
+    setMeal(getMealByTime());
+  };
+
+  const confirmRecord = () => {
+    if (!active) return;
+    const portion = Math.min(10, Math.max(0.1, Number(amount) || 1));
+    dispatch({
+      type: 'ADD_RECORD',
+      record: {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        date: todayKey(),
+        name: active.name,
+        calories: Math.round(active.calories * portion),
+        source: 'eat',
+        mealType: meal,
+        time: currentTime(),
+        amount: portion,
+        sourceLabel: active.kind,
+        feedback: '好好吃饭这件事，分身已经替你鼓掌啦。',
+      },
+    });
+    notify('这一餐记下来了，收到一颗星');
+    flashCalories(Math.round(active.calories * portion));
+    if (!guideSeen) showGuide();
+    setStep('result');
+  };
+
+  const closeModal = () => {
+    setActive(null);
+    setStep('confirm');
+  };
+
+  const totalCalories = active ? Math.round(active.calories * (Math.min(10, Math.max(0.1, Number(amount) || 1)))) : 0;
 
   return (
     <div className="space-y-4 px-4 pb-44 pt-6">
@@ -292,6 +347,7 @@ export default function EatPage() {
                   recommendText={guide.orderTip}
                   avoidLabel="⚠️ 避坑"
                   avoidText={guide.avoid}
+                  onClick={() => openRecord({ id: guide.id, name: guide.brand, emoji: guide.emoji, calories: guide.calories, kind: `外卖攻略 · ${guide.brand}` })}
                 />
               ))}
               {takeoutList.length === 0 && <p className="py-6 text-center text-xs text-textMuted">没找到相关攻略，换个词试试。</p>}
@@ -323,6 +379,7 @@ export default function EatPage() {
                   recommendText={ingredientNames(recipe.ingredients)}
                   avoidLabel="💡 技巧"
                   avoidText={recipe.tip}
+                  onClick={() => openRecord({ id: recipe.id, name: recipe.name, emoji: recipe.emoji, calories: recipe.calories, kind: '自己做' })}
                 />
               ))}
               {recipeList.length === 0 && <p className="py-6 text-center text-xs text-textMuted">选几样食材，或换个关键词。</p>}
@@ -354,6 +411,7 @@ export default function EatPage() {
                   recommendText={shop.recommend}
                   avoidLabel="⚠️ 避坑"
                   avoidText={shop.avoid}
+                  onClick={() => openRecord({ id: shop.id, name: shop.name, emoji: shop.emoji, calories: shop.avgCalories, kind: `附近好店 · ${shop.name}` })}
                 />
               ))}
               {nearbyList.length === 0 && <p className="py-6 text-center text-xs text-textMuted">没找到相关店，换个词试试。</p>}
@@ -388,6 +446,28 @@ export default function EatPage() {
           </Link>
         </div>
       </div>
+
+      <Modal open={!!active} onClose={closeModal} title={active ? (step === 'result' ? '记下啦' : '确认这一餐') : ''}>
+        {active && step === 'confirm' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-2xl bg-surface px-3 py-2.5"><span className="text-sm font-medium text-text">{active.name}</span><span className="text-sm font-bold text-text">{totalCalories} kcal</span></div>
+            <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="份数" className="w-full rounded-2xl bg-surface px-4 py-3 text-sm text-text outline-none" />
+            <div className="flex flex-wrap gap-2">
+              {(['breakfast', 'lunch', 'dinner', 'snack', 'late'] as MealType[]).map((item) => (
+                <button key={item} onClick={() => setMeal(item)} className={`chip text-xs ${meal === item ? 'bg-primary text-primaryText' : 'bg-surface text-textMuted'}`}>{mealLabels[item]}</button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2"><button onClick={closeModal} className="btn-secondary">再看看</button><button onClick={confirmRecord} className="btn-primary">确认记录</button></div>
+          </div>
+        )}
+        {active && step === 'result' && (
+          <div className="space-y-4 text-center">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-[20px] bg-primary text-primaryText"><Icon name="check" size={28} /></span>
+            <div><p className="text-base font-semibold text-text">{active.name} 已经记好啦</p><p className="muted mt-1">分身收到一颗星，等你去星星盒拆礼物。</p></div>
+            <div className="grid grid-cols-2 gap-2"><button onClick={() => { closeModal(); navigate('/avatar'); }} className="btn-primary">去看分身</button><button onClick={closeModal} className="btn-secondary">继续看看</button></div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
