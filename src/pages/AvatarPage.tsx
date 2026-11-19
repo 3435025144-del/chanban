@@ -11,7 +11,7 @@ import { todayKey } from '../utils/date';
 const moods = ['开心', '平静', '有点累', '馋馋的', '想被夸'];
 
 export default function AvatarPage() {
-  const { state, dispatch, todayLog, todayWaterMl, todayMeals, todayStars, todayMood, notify } = useApp();
+  const { state, dispatch, todayLog, todayWaterMl, todayMeals, todayStars, todayEarned, todayMood, notify } = useApp();
   const today = todayKey();
   const [lineSeed, setLineSeed] = useState(0);
   const [moodOpen, setMoodOpen] = useState(false);
@@ -39,6 +39,7 @@ export default function AvatarPage() {
   const starsToLevel = Math.max(1, Math.ceil((expNeed - state.avatar.exp) / 10));
   const waterClaimed = state.waterStarDates.includes(today);
   const moodClaimed = state.moodStarDates.includes(today);
+  const starCapReached = todayEarned >= 5;
 
   const refreshLine = () => {
     setInteractionLine(getContextLine(state.avatar.equipped.personality, {
@@ -48,12 +49,14 @@ export default function AvatarPage() {
   };
 
   const addWater = () => {
+    if (waterClaimed || starCapReached) { notify(starCapReached ? '今天星星已经赚满啦' : '今天的喝水星已经领过啦'); return; }
     dispatch({ type: 'ADD_WATER', date: today });
     notify(waterClaimed ? '又陪我喝了一杯' : '喝水打卡，收到一颗星');
     refreshLine();
   };
 
   const saveMood = () => {
+    if (moodClaimed || starCapReached) { notify(starCapReached ? '今天星星已经赚满啦' : '今天的心情星已经领过啦'); setMoodOpen(false); return; }
     dispatch({ type: 'SET_MOOD', date: today, mood, note: moodNote.trim() || undefined });
     setMoodOpen(false);
     notify(moodClaimed ? '今天的心情记好啦' : '心情记下来啦，收到一颗星');
@@ -68,7 +71,7 @@ export default function AvatarPage() {
   };
 
   return (
-    <div className="space-y-4 px-4 pb-8 pt-6">
+    <div className="space-y-4 px-4 pb-32 pt-6">
       <header className="flex items-start justify-between gap-3">
         <div>
           <p className="muted">你的分身和星星都在这里</p>
@@ -110,22 +113,30 @@ export default function AvatarPage() {
       <section className="card space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="section-title">今天怎么赚星</h2>
-          <span className="muted">只奖励照顾自己的小事</span>
+          <span className={`text-[11px] ${starCapReached ? 'text-coralDeep' : 'text-avocado'}`}>今日已赚 {todayEarned}/5 星</span>
         </div>
         <Link to="/record" className="flex items-center gap-3 rounded-2xl bg-warm p-3 active:scale-[0.99]">
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-avocado"><Icon name="camera" size={18} /></span>
           <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-ink">记录一餐</span><span className="muted">拍照或手记都可以</span></span>
           <span className="chip bg-avocadoSoft px-2.5 py-1 text-[11px] text-avocado">+1星</span>
         </Link>
-        <button onClick={addWater} className="flex w-full items-center gap-3 rounded-2xl bg-warm p-3 text-left active:scale-[0.99]">
+        <button
+          onClick={addWater}
+          disabled={waterClaimed || starCapReached}
+          className={`flex w-full items-center gap-3 rounded-2xl bg-warm p-3 text-left transition-opacity ${waterClaimed || starCapReached ? 'opacity-50' : 'active:scale-[0.99]'}`}
+        >
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-avocado"><Icon name="cup" size={18} /></span>
           <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-ink">陪我喝一杯水</span><span className="muted">今天还没来 2 杯</span></span>
-          <span className="chip bg-avocadoSoft px-2.5 py-1 text-[11px] text-avocado">{waterClaimed ? '已领' : '+1星'}</span>
+          <span className="chip bg-avocadoSoft px-2.5 py-1 text-[11px] text-avocado">{starCapReached ? '已满' : waterClaimed ? '已领' : '+1星'}</span>
         </button>
-        <button onClick={() => { setMood(todayMood?.mood ?? '开心'); setMoodNote(todayMood?.note ?? ''); setMoodOpen(true); }} className="flex w-full items-center gap-3 rounded-2xl bg-warm p-3 text-left active:scale-[0.99]">
+        <button
+          onClick={() => { setMood(todayMood?.mood ?? '开心'); setMoodNote(todayMood?.note ?? ''); setMoodOpen(true); }}
+          disabled={moodClaimed || starCapReached}
+          className={`flex w-full items-center gap-3 rounded-2xl bg-warm p-3 text-left transition-opacity ${moodClaimed || starCapReached ? 'opacity-50' : 'active:scale-[0.99]'}`}
+        >
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white text-avocado"><Icon name="heart" size={18} /></span>
           <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-ink">记录今天的心情</span><span className="muted">{todayMood ? `今天：${todayMood.mood}` : '一句话也可以'}</span></span>
-          <span className="chip bg-avocadoSoft px-2.5 py-1 text-[11px] text-avocado">{moodClaimed ? '已领' : '+1星'}</span>
+          <span className="chip bg-avocadoSoft px-2.5 py-1 text-[11px] text-avocado">{starCapReached ? '已满' : moodClaimed ? '已领' : '+1星'}</span>
         </button>
         <button onClick={() => { setSeconds(60); setPhase('breathing'); }} className="flex w-full items-center justify-between rounded-2xl bg-coralSoft p-3 text-left active:scale-[0.99]">
           <span className="flex items-center gap-3">
