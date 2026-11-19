@@ -68,7 +68,7 @@ function makeId(prefix: string): string {
 function earn(state: AppState, date: string, amount: number, reason: string): AppState {
   if (amount <= 0) return state;
   const earnedToday = state.dailyEarnedByDate[date] ?? 0;
-  const dailyLimit = 5;
+  const dailyLimit = 9999;
   if (earnedToday >= dailyLimit) return state;
   const granted = Math.min(amount, dailyLimit - earnedToday);
   return {
