@@ -151,6 +151,23 @@ body {
   }
 }
 
+.map-grid {
+  background-color: rgb(var(--c-surface));
+  background-image:
+    linear-gradient(rgb(var(--c-green-soft) / 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--c-green-soft) / 0.55) 1px, transparent 1px),
+    linear-gradient(rgb(var(--c-cyan-soft) / 0.6) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--c-cyan-soft) / 0.6) 1px, transparent 1px);
+  background-size: 40px 40px, 40px 40px, 80px 80px, 80px 80px;
+  background-position: -1px -1px;
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-sheet-up { animation: sheet-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 @keyframes breathe-soft {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.03); opacity: 0.92; }
