@@ -4,7 +4,6 @@ import BottomNav from './components/BottomNav';
 import AvatarPage from './pages/AvatarPage';
 import DrawResultPage from './pages/DrawResultPage';
 import EatPage from './pages/EatPage';
-import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import RecordPage from './pages/RecordPage';
 import SettingsPage from './pages/SettingsPage';
@@ -19,9 +18,9 @@ export default function App() {
   }, [location.pathname]);
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[375px] overflow-hidden bg-cream pb-28 shadow-card">
+    <div className="relative mx-auto min-h-screen w-full max-w-[375px] overflow-hidden bg-white pb-24 shadow-card">
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<Navigate to="/eat" replace />} />
         <Route path="/eat" element={<EatPage />} />
         <Route path="/record" element={<RecordPage />} />
         <Route path="/avatar" element={<AvatarPage />} />
@@ -30,7 +29,7 @@ export default function App() {
         <Route path="/wardrobe" element={<WardrobePage />} />
         <Route path="/me" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/eat" replace />} />
       </Routes>
       <BottomNav />
     </div>
