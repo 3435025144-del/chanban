@@ -4,6 +4,7 @@ import Avatar from '../components/Avatar';
 import Hamster from '../components/Hamster';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
+import StarBadge from '../components/StarBadge';
 import { useApp } from '../context/AppContext';
 import { getContextLine } from '../data/avatarLines';
 import type { FriendPrivacy } from '../types';
@@ -101,47 +102,49 @@ export default function AvatarPage() {
   const decorEmoji = decorItems.find((item) => item.id === state.hamsterDecorEquipped)?.emoji ?? '';
 
   return (
-    <div className="space-y-3 px-5 pb-32 pt-6">
+    <div className="av-page min-h-screen space-y-3 bg-page px-5 pb-32 pt-6">
       <header className="flex items-start justify-between gap-3">
         <div>
           <p className="muted">陪你一点点长大</p>
           <h1 className="mt-1 text-[31px] font-bold leading-tight text-text">小馋</h1>
         </div>
-        <span className="chip shrink-0 bg-yellowSoft px-3 py-2 text-xs font-bold text-yellowText tabular-nums"><Icon name="star" size={13} className="mr-1 inline" />{state.blindBox.stars} 星</span>
+        <StarBadge onClick={() => setStarGuideOpen(true)} />
       </header>
 
-      <div className="grid grid-cols-2 gap-2 rounded-[16px] bg-surface p-1">
+      <div className="rb-segment">
         {([['avatar', '我的分身'], ['house', '小馋小屋']] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} className={`min-h-[44px] rounded-[12px] text-[13px] font-bold transition-colors ${tab === id ? 'bg-card text-primary shadow-card' : 'text-textMuted'}`}>{label}</button>
+          <button key={id} onClick={() => setTab(id)} className={`rb-segment-btn ${tab === id ? 'rb-segment-active' : ''}`}>{label}</button>
         ))}
       </div>
 
       {tab === 'avatar' ? (
         <>
-          <section className="card space-y-3">
+          <section className="av-card space-y-3">
             <div className="relative mx-auto w-full max-w-[300px]">
               <div className="overflow-hidden rounded-[22px] bg-greenSoft/40">
                 <Avatar config={state.avatar.equipped} fill className="animate-idle" />
               </div>
-              <div className="absolute -bottom-3 -left-3 flex items-center gap-1.5 rounded-[18px] bg-peachSoft px-2.5 py-1.5 shadow-card">
-                <Hamster size={42} />
-                <span className="max-w-[150px] text-[11px] leading-tight text-text/85">{decorEmoji} {interactionLine}</span>
+              <div className="av-bubble absolute -bottom-4 -left-3 z-10">
+                <Hamster size={36} />
+                <span>{decorEmoji} {interactionLine}</span>
               </div>
             </div>
-            <div className="pt-3 text-center">
+            <div className="pt-4 text-center">
               <p className="text-[13px] font-bold text-text">当前造型 · {state.avatar.equipped.name}</p>
               <p className="muted mt-0.5 tabular-nums">Lv.{state.avatar.level} · {state.avatar.mood}</p>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <button onClick={() => setStarGuideOpen(true)} className="rounded-[14px] bg-surface p-2.5 text-left" aria-label="查看星星获取方式"><p className="text-base font-bold text-text tabular-nums">{state.blindBox.stars}</p><p className="muted">星星数量</p></button>
+            <div className="grid grid-cols-2 gap-2 text-center">
               <div className="rounded-[14px] bg-surface p-2.5"><p className="text-base font-bold text-text tabular-nums">{state.streakDays}</p><p className="muted">连续记录天数</p></div>
               <div className="rounded-[14px] bg-surface p-2.5"><p className="text-base font-bold text-text tabular-nums">{Math.max(1, Math.ceil((expNeed - state.avatar.exp) / 10))}</p><p className="muted">距升级星</p></div>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <Link to="/star-box" className="btn-deep flex items-center justify-center gap-1.5 text-[13px]"><Icon name="gift" size={16} />打开星星盒</Link>
+              <Link to="/star-box" className="av-primary-btn flex items-center justify-center gap-1.5 text-[13px]"><Icon name="gift" size={16} />打开星星盒</Link>
               <Link to="/wardrobe" className="btn-secondary flex items-center justify-center gap-1.5 text-[13px]"><Icon name="hanger" size={16} />去衣橱</Link>
             </div>
-            <button onClick={() => setGrowthOpen(true)} className="w-full text-center text-xs text-primary">查看成长记录</button>
+            <div className="flex items-center justify-center gap-4 pt-1">
+              <button onClick={() => setGrowthOpen(true)} className="text-xs text-primary">查看成长记录</button>
+              <button onClick={() => setStarGuideOpen(true)} className="text-xs text-primary">攒星指南</button>
+            </div>
           </section>
         </>
       ) : (

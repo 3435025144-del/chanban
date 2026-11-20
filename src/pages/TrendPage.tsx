@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Hamster from '../components/Hamster';
 import Icon from '../components/Icon';
+import StarBadge from '../components/StarBadge';
 import { useApp } from '../context/AppContext';
 import { shiftDate, todayKey } from '../utils/date';
 
@@ -148,7 +149,7 @@ export default function TrendPage() {
           <p className="muted">看清自己的节奏</p>
           <h1 className="mt-1 rb-page-title">本周趋势</h1>
         </div>
-        <span className="tp-streak-chip chip shrink-0 px-3 py-2 text-xs font-bold tabular-nums"><Icon name="star" size={13} className="mr-1 inline" />连续 {state.streakDays} 天</span>
+        <StarBadge />
       </header>
 
       <div className="rb-segment">

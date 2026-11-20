@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Hamster from '../components/Hamster';
 import Icon, { type IconName } from '../components/Icon';
 import Modal from '../components/Modal';
+import StarBadge from '../components/StarBadge';
 import { useApp } from '../context/AppContext';
 import { cupColors, cupPresets } from '../data/cups';
 import type { FoodRecord, MealType, RecognitionResult, WaterCup } from '../types';
@@ -460,7 +461,7 @@ export default function RecordPage() {
           <p className="rb-date">{formatDateCN(today)}</p>
           <h1 className="rb-title">今天记下来啦</h1>
         </div>
-        <Hamster size={48} mood="happy" />
+        <StarBadge />
       </header>
 
       <section className="card rb-chat-card">

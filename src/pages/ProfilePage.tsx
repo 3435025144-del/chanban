@@ -4,6 +4,7 @@ import Avatar from '../components/Avatar';
 import Hamster from '../components/Hamster';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
+import StarBadge from '../components/StarBadge';
 import { useApp } from '../context/AppContext';
 import {
   COMMON_TABOO_GROUPS, DIETARY_TABOOS, DIETARY_TABOO_PLACEHOLDERS, FLAVOR_OPTIONS,
@@ -105,7 +106,7 @@ export default function ProfilePage() {
           <p className="muted">你的小小成就都在这里</p>
           <h1 className="mt-1 text-[31px] font-bold leading-tight text-text">我的</h1>
         </div>
-        <span className="chip shrink-0 bg-accent px-3 py-2 text-xs font-bold text-[#202220] tabular-nums"><Icon name="star" size={13} className="mr-1 inline" />连续 {state.streakDays} 天</span>
+        <StarBadge />
       </header>
 
       <Link to="/settings?focus=avatar" className="mp-card block p-4">
