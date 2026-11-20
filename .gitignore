@@ -22,6 +22,13 @@ deploy-status.txt
 *.vbs
 gh-api-check.txt
 cred-check.txt
+cred-list.txt
 proc-check.txt
 standalone-check.txt
+file-list.txt
+deploy-api-status.txt
+deploy-chunk-status.txt
+deploy-status.txt
+push-status.txt
+upload-index.txt
 馋伴.html
