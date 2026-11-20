@@ -19,6 +19,15 @@ const decorItems = [
 ];
 const themes = ['本周主题 · 清爽绿', '本周主题 · 暖暖桃', '本周主题 · 天空蓝'];
 
+const starWays = [
+  { icon: 'edit', title: '记录一餐', desc: '把吃过的写下来，+1 星' },
+  { icon: 'cup', title: '记录喝水', desc: '每天第一次喝水打卡，+1 星' },
+  { icon: 'walk', title: '运动打卡', desc: '完成一次运动打卡，+1 星' },
+  { icon: 'sparkle', title: '扛馋打卡', desc: '温柔地停下来，+1 星' },
+  { icon: 'gift', title: '每日打开', desc: '每天来看看小馋，+1 星' },
+  { icon: 'star', title: '如实记录放纵餐', desc: '不责怪自己，额外 +1 星' },
+] as const;
+
 export default function AvatarPage() {
   const { state, dispatch, todayLog, todayWaterMl, todayMeals, todayStars, todayEarned, todayMood, notify } = useApp();
   const today = todayKey();
@@ -28,6 +37,7 @@ export default function AvatarPage() {
   const [mood, setMood] = useState(todayMood?.mood ?? '开心');
   const [moodNote, setMoodNote] = useState(todayMood?.note ?? '');
   const [growthOpen, setGrowthOpen] = useState(false);
+  const [starGuideOpen, setStarGuideOpen] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'breathing' | 'choice'>('idle');
   const [seconds, setSeconds] = useState(60);
   const [friendCode, setFriendCode] = useState('');
@@ -123,7 +133,7 @@ export default function AvatarPage() {
               <p className="muted mt-0.5 tabular-nums">Lv.{state.avatar.level} · {state.avatar.mood}</p>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-[14px] bg-surface p-2.5"><p className="text-base font-bold text-text tabular-nums">{state.blindBox.stars}</p><p className="muted">星星数量</p></div>
+              <button onClick={() => setStarGuideOpen(true)} className="rounded-[14px] bg-surface p-2.5 text-left" aria-label="查看星星获取方式"><p className="text-base font-bold text-text tabular-nums">{state.blindBox.stars}</p><p className="muted">星星数量</p></button>
               <div className="rounded-[14px] bg-surface p-2.5"><p className="text-base font-bold text-text tabular-nums">{state.streakDays}</p><p className="muted">连续记录天数</p></div>
               <div className="rounded-[14px] bg-surface p-2.5"><p className="text-base font-bold text-text tabular-nums">{Math.max(1, Math.ceil((expNeed - state.avatar.exp) / 10))}</p><p className="muted">距升级星</p></div>
             </div>
@@ -284,6 +294,35 @@ export default function AvatarPage() {
           <p className="rounded-2xl bg-surface p-3 text-xs leading-relaxed text-text/75">每一次好好吃饭、每一杯水、每一次温柔地停下来，都在让分身长大。</p>
         </div>
       </Modal>
+
+      {starGuideOpen && (
+        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-text/40 backdrop-blur-sm" onClick={() => setStarGuideOpen(false)}>
+          <div className="animate-sheet-up max-h-[62vh] w-full max-w-[430px] overflow-hidden rounded-t-[26px] bg-card pb-[max(20px,env(safe-area-inset-bottom))] shadow-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-border" />
+            <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-3">
+              <div>
+                <p className="muted">星星从哪里来</p>
+                <h3 className="mt-1 text-[19px] font-bold text-text">攒星小指南</h3>
+              </div>
+              <button onClick={() => setStarGuideOpen(false)} className="icon-btn h-9 w-9 shrink-0" aria-label="关闭星星指南"><Icon name="close" size={18} /></button>
+            </div>
+            <div className="no-scrollbar max-h-[48vh] overflow-y-auto px-5">
+              <div className="space-y-2 pb-3">
+                {starWays.map((way) => (
+                  <div key={way.title} className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2.5">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-card text-primary"><Icon name={way.icon} size={16} /></span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-bold text-text">{way.title}</span>
+                      <span className="block text-[10px] text-textMuted">{way.desc}</span>
+                    </span>
+                    <span className="shrink-0 text-[11px] font-bold text-primary">+1 星</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -236,6 +236,11 @@ body {
   color: rgb(var(--c-text));
 }
 
+.record-page {
+  min-height: 100vh;
+  background: rgb(var(--c-page));
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }

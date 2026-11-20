@@ -37,6 +37,7 @@ export interface FoodRecord {
   mealType?: MealType;
   time?: string;
   amount?: number;
+  grams?: number;
   sourceLabel?: string;
   feedback?: string;
   honestStar?: boolean;
@@ -141,6 +142,7 @@ export interface AppState {
   avatar: AvatarState;
   blindBox: BlindBoxState;
   logs: Record<string, DayLog>;
+  skippedMealsByDate: Record<string, string[]>;
   calorieGoal: number;
   /** 基础代谢，默认 1300 kcal，可在「我的」页修改；0 表示数据不足 */
   bmr: number;

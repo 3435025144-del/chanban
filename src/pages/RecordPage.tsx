@@ -99,6 +99,40 @@ function keyOf(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+function greetingForHour(hour: number): string {
+  if (hour >= 5 && hour < 10) return '早上好，今天想吃点什么？';
+  if (hour >= 10 && hour < 14) return '午餐时间到，看看吃啥？';
+  if (hour >= 14 && hour < 18) return '下午好，今天稳住了吗？';
+  if (hour >= 18 && hour < 23) return '晚上好，晚餐记下来了吗？';
+  return '这么晚了，是不是又馋啦？';
+}
+
+function estimateCalories(name: string): number {
+  const rules: [RegExp, number][] = [
+    [/牛腩饭|牛肉饭|盖饭|丼/, 550],
+    [/番茄.*牛腩|红烧牛肉/, 520],
+    [/汉堡|炸鸡|薯条/, 560],
+    [/披萨|比萨/, 600],
+    [/火锅|烧烤/, 700],
+    [/奶茶|果茶/, 350],
+    [/咖啡|美式|拿铁/, 120],
+    [/米饭|白饭/, 230],
+    [/面条|拉面|拌面|意面|米粉/, 420],
+    [/饺子|馄饨|包子/, 300],
+    [/沙拉|蔬菜|青菜/, 150],
+    [/鸡胸|鸡腿|鸡蛋/, 180],
+    [/鱼|虾|海鲜/, 220],
+    [/豆腐|豆浆/, 140],
+    [/红薯|玉米|土豆/, 140],
+    [/粥|汤/, 150],
+    [/苹果|香蕉|橙|水果/, 90],
+    [/牛奶|酸奶/, 130],
+    [/面包|吐司|蛋糕/, 240],
+  ];
+  const found = rules.find(([pattern]) => pattern.test(name));
+  return found ? found[1] : 320;
+}
+
 export default function RecordPage() {
   const {
     state, dispatch, todayLog, todayTotal, todayWaterMl, todayWaterCount,
@@ -106,12 +140,17 @@ export default function RecordPage() {
   } = useApp();
   const today = todayKey();
   const navigate = useNavigate();
+  const [now, setNow] = useState(() => new Date());
   const [weekStart, setWeekStart] = useState(() => mondayOf(today));
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [recognizing, setRecognizing] = useState(false);
   const [result, setResult] = useState<RecognitionResult | null>(null);
   const [photoMeal, setPhotoMeal] = useState<MealType>(() => getMealByTime());
   const [photoAmount, setPhotoAmount] = useState('1');
+  const [confirmName, setConfirmName] = useState('');
+  const [confirmCalories, setConfirmCalories] = useState('');
+  const [confirmGrams, setConfirmGrams] = useState('200');
+  const [detailOpen, setDetailOpen] = useState<'intake' | 'activity' | 'deficit' | null>(null);
   const [manualMeal, setManualMeal] = useState<MealType | null>(null);
   const [form, setForm] = useState({ name: '', calories: '', amount: '1', honest: false });
   const [editing, setEditing] = useState<EditState | null>(null);
@@ -140,6 +179,11 @@ export default function RecordPage() {
   const undoTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => () => window.clearTimeout(undoTimer.current), []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -179,10 +223,14 @@ export default function RecordPage() {
     return map;
   }, [todayLog.records]);
 
+  const greeting = greetingForHour(now.getHours());
   const todayActivities = useMemo(
     () => state.activityLogs.filter((log) => log.date === today),
     [state.activityLogs, today],
   );
+  const skippedMeals = state.skippedMealsByDate[today] ?? [];
+  const activityLoggedCalories = todayActivities.reduce((sum, log) => sum + log.calories, 0);
+  const stepCalories = Math.max(0, activeCalories - activityLoggedCalories);
   const activityOptions = useMemo(
     () => [...activityPresets, ...customActivities],
     [customActivities],
@@ -212,16 +260,6 @@ export default function RecordPage() {
     return { head: '今天还稳稳的', body: '记下来啦，今天又多清楚一点。' };
   }, [todayTotal, activeCalories, remaining, state.streakDays]);
 
-  const persistResult = (recognised: RecognitionResult, mealType: MealType, portion: number, source: FoodRecord['source'] = 'photo') => {
-    dispatch({ type: 'ADD_RECORD', record: {
-      id: uid(), date: today, name: recognised.name, calories: Math.round(recognised.calories * portion),
-      protein: recognised.protein, carbs: recognised.carbs, fat: recognised.fat, source,
-      mealType, time: currentTime(), amount: portion, sourceLabel: '拍照识别',
-      feedback: recognised.feedback, honestStar: isLikelyCheat(recognised),
-    } });
-    if (!guideSeen) showGuide();
-  };
-
   const handlePhoto = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -230,17 +268,46 @@ export default function RecordPage() {
       const url = String(reader.result);
       setPhotoPreview(url); setResult(null); setRecognizing(true);
       setPhotoMeal(getMealByTime()); setPhotoAmount('1');
-      setResult(await recognizeFood(url)); setRecognizing(false);
+      const recognised = await recognizeFood(url);
+      setResult(recognised);
+      setConfirmName(recognised.name);
+      setConfirmCalories(String(recognised.calories));
+      setConfirmGrams('200');
+      setRecognizing(false);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
   };
 
-  const saveRecognized = () => {
-    if (!result) return;
-    const portion = Math.min(10, Math.max(0.1, Number(photoAmount) || 1));
-    persistResult(result, photoMeal, portion);
-    notify('记下来啦，今天又多清楚一点。'); setPhotoPreview(null); setResult(null);
+  const confirmRecognized = () => {
+    if (!result || !confirmName.trim()) { notify('给识别出的食物起个名字吧'); return; }
+    const calories = Math.round(Number(confirmCalories) || 0);
+    if (calories < 1) { notify('热量至少填 1 kcal'); return; }
+    dispatch({ type: 'ADD_RECORD', record: {
+      id: uid(), date: today, name: confirmName.trim(), calories,
+      protein: result.protein, carbs: result.carbs, fat: result.fat, source: 'photo',
+      mealType: photoMeal, time: currentTime(), amount: Math.min(10, Math.max(0.1, Number(photoAmount) || 1)),
+      grams: Math.max(0, Math.round(Number(confirmGrams) || 0)) || undefined,
+      sourceLabel: '拍照识别', feedback: result.feedback, honestStar: isLikelyCheat(result),
+    } });
+    notify('记下来啦，今天又多清楚一点。');
+    setPhotoPreview(null); setResult(null);
+    if (!guideSeen) showGuide();
+  };
+
+  const smartEstimate = () => {
+    const name = form.name.trim();
+    if (!name) { notify('先写下食物名称，我再帮你估算'); return; }
+    const value = estimateCalories(name);
+    setForm((current) => ({ ...current, calories: String(value) }));
+    notify(`按「${name}」估算约 ${value} kcal，可以再改`);
+  };
+
+  const skipMeal = () => {
+    if (!manualMeal) return;
+    dispatch({ type: 'SET_MEAL_SKIPPED', date: today, meal: manualMeal, skipped: true });
+    notify(`${mealLabels[manualMeal]}已记为没吃，不用勉强`);
+    setManualMeal(null);
   };
 
   const saveManual = () => {
@@ -333,7 +400,13 @@ export default function RecordPage() {
     setExerciseOpen(false);
     notify(`${selectedActivity.name}打卡成功，活动消耗 +${selectedActivity.calories} kcal`);
   };
-  const openMonth = (offset: number) => { setMonthOffset(offset); setMonthOpen(true); };
+  const shiftWeek = (offset: number) => {
+    const next = new Date(weekStart);
+    next.setDate(next.getDate() + offset * 7);
+    setWeekStart(next);
+    setSelectedDate(null);
+  };
+  const openMonthPicker = () => { setMonthOffset(0); setMonthOpen(true); };
   const chooseMonthDay = (key: string) => { setWeekStart(mondayOf(key)); setSelectedDate(key); setMonthOpen(false); };
   const openCup = () => { setCupLabel(state.waterCup.label); setCupCapacity(String(state.waterCup.capacity)); setCupColor(state.waterCup.color); setCupOpen(true); };
   const saveCup = () => {
@@ -352,177 +425,161 @@ export default function RecordPage() {
   };
 
   return (
-    <div className="space-y-3 px-5 pb-32 pt-6">
-      <header className="flex items-start justify-between gap-3">
+    <div className="record-page space-y-3 px-4 pb-28 pt-3">
+      <header className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="muted">{formatDateCN(today)} · 记录与回看，都在这里</p>
-          <h1 className="mt-1 text-[31px] font-bold leading-tight text-text">今天记下来啦</h1>
+          <p className="text-[11px] text-textMuted">小馋陪你，记录每一餐</p>
+          <h1 className="mt-0.5 text-[23px] font-black leading-tight text-text">{greeting}</h1>
         </div>
-        <Hamster size={64} mood="happy" />
+        <Hamster size={48} mood="happy" />
       </header>
 
-      <section className="flex items-center gap-3 rounded-[22px] bg-peachSoft p-3.5 shadow-card">
-        <Hamster size={64} />
-        <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold leading-relaxed text-text">今天还稳稳的，想看看吃什么，或者拍一餐让我记下来？</p>
-          <p className="mt-1 text-[12px] leading-relaxed text-peachText">每记录一次，小馋都会回应你。</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-textMuted">{hamster.head} · {hamster.body}</p>
-        </div>
+      <section className="card flex items-center gap-2.5 p-2.5">
+        <Hamster size={40} />
+        <p className="min-w-0 flex-1 text-[12px] font-medium leading-relaxed text-text">{hamster.head} · {hamster.body}</p>
       </section>
 
-      <section className="card space-y-3">
-        <div className="flex items-end justify-between gap-2">
-          <div className="min-w-0">
-            <p className="muted">今日摄入</p>
-            <p className="mt-1 text-[34px] font-bold leading-none text-text tabular-nums">{todayTotal} <span className="text-sm font-normal text-textMuted">/ {state.calorieGoal} kcal</span></p>
-          </div>
-          <span className={`ml-auto shrink-0 whitespace-nowrap text-[11px] font-medium tabular-nums ${remaining >= 0 ? 'text-primary' : 'text-warn'}`}>{remaining >= 0 ? `还可用 ${remaining} kcal` : `超出 ${Math.abs(remaining)} kcal`}</span>
-        </div>
-        <div className="h-2.5 overflow-hidden rounded-full bg-surface"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${caloriePercent}%` }} /></div>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-[16px] bg-greenSoft p-3 text-center">
-            <p className="text-lg font-bold text-greenText tabular-nums">{todayTotal}</p>
-            <p className="mt-0.5 text-[11px] text-text/70">已摄入</p>
-          </div>
-          <div className="rounded-[16px] bg-cyanSoft p-3 text-center">
-            <p className="text-lg font-bold text-cyanText tabular-nums">{activeCalories > 0 ? activeCalories : '—'}</p>
-            <p className="mt-0.5 text-[11px] text-text/70">活动消耗</p>
-          </div>
-          <div className="rounded-[16px] bg-surface p-3 text-center">
-            <p className={`text-lg font-bold tabular-nums ${deficitTone}`}>{deficitText}</p>
-            <p className="mt-0.5 text-[11px] text-text/70">预计热量差</p>
-          </div>
-        </div>
-        {expectedDeficit === null ? (
-          <p className="text-[11px] text-textMuted">补充基础代谢数据后，这里会自动计算热量差。</p>
-        ) : deficitPositive ? (
-          <p className="text-[11px] text-textMuted">今天有缺口哦，继续保持！</p>
-        ) : (
-          <p className="text-[11px] text-textMuted">今天吃得很开心，明天继续加油！</p>
-        )}
-      </section>
-
-      <button onClick={() => navigate('/eat')} className="relative min-h-[124px] w-full overflow-hidden rounded-[26px] border border-[#F3EBD8] bg-[#FFFDF5] p-4 text-left shadow-card">
-        <span className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[#FFF3D6]" />
-        <span className="relative flex items-center gap-3.5">
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[20px] bg-card text-3xl shadow-card">🍽️</span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[20px] font-black leading-tight text-[#20241F]">今天不知道吃什么？</span>
-            <span className="mt-1 block text-[12px] leading-relaxed text-[#5B5B57]">小馋按预算、口味和时间，帮你挑一餐</span>
-          </span>
-        </span>
-        <span className="relative mt-3 flex justify-end">
-          <span className="rounded-full bg-primaryDeep px-5 py-2.5 text-[13px] font-bold text-primaryText shadow-card">帮我选一餐 →</span>
-        </span>
-      </button>
-
-      <div className="grid grid-cols-3 gap-2">
-        <button onClick={() => setManualMeal(getMealByTime())} className="flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-[18px] bg-yellowSoft p-2 shadow-card">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-card text-yellowText"><Icon name="edit" size={18} /></span>
-          <span className="text-[12px] font-bold text-text">手动记录</span>
-          <span className="text-[10px] text-text/70">自己选更准确</span>
-        </button>
-        <div className="relative flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-[18px] bg-cyanSoft p-2 shadow-card">
-          <button onClick={openCup} className="absolute right-1 top-1 grid h-7 w-7 place-items-center text-cyanText" aria-label="水杯设置"><Icon name="settings" size={14} /></button>
-          <button onClick={openWaterSheet} className="flex flex-col items-center gap-1.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-card text-cyanText"><Icon name="cup" size={18} /></span>
-            <span className="text-[12px] font-bold text-text">喝水</span>
-            <span className="text-[10px] text-text/70 tabular-nums">{todayWaterMl}/{state.waterGoal} ml</span>
-          </button>
-          {undoWaterVisible && <button onClick={undoWater} className="absolute bottom-1 right-1 rounded-full bg-card px-2 py-0.5 text-[10px] text-primary shadow-card">撤销</button>}
-        </div>
-        <button onClick={() => setExerciseOpen(true)} className="flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-[18px] bg-greenSoft p-2 shadow-card">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-card text-greenText"><Icon name="walk" size={18} /></span>
-          <span className="text-[12px] font-bold text-text">运动打卡</span>
-          <span className="text-[10px] text-text/70 tabular-nums">{activeCalories > 0 ? `已消耗 ${activeCalories} kcal` : '今天还没运动'}</span>
-        </button>
-      </div>
-
-      <button onClick={() => photoInput.current?.click()} className="relative min-h-[124px] w-full overflow-hidden rounded-[26px] bg-primaryDeep p-4 text-left shadow-card">
-        <span className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-white/10" />
-        <span className="relative flex items-center gap-3.5">
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[20px] bg-card/15 text-primaryText"><Icon name="camera" size={26} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[19px] font-bold text-primaryText">拍照识别卡路里</span>
-            <span className="mt-1 block text-[12px] leading-relaxed text-primaryText/85">拍一下，小馋帮你识别食物和热量</span>
-          </span>
-        </span>
-        <span className="relative mt-3 block text-[11px] font-medium text-primaryText/70">对准食物拍一张，识别后可再调整份数</span>
-      </button>
-
-      <section className="card space-y-3">
+      <section className="card space-y-2 p-3">
         <div className="flex items-center justify-between">
-          <h2 className="section-title">本周记录</h2>
-          <div className="flex items-center gap-1">
-            <button onClick={() => openMonth(-1)} className="icon-btn h-8 w-8" aria-label="上个月"><Icon name="chevronLeft" size={16} /></button>
-            <button onClick={() => { setWeekStart(mondayOf(today)); setSelectedDate(null); }} className="chip bg-surface px-2.5 py-1.5 text-[11px] text-text">本周</button>
-            <button onClick={() => openMonth(1)} className="icon-btn h-8 w-8" aria-label="下个月"><Icon name="chevronRight" size={16} /></button>
+          <h2 className="text-[15px] font-bold text-text">本周记录</h2>
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => shiftWeek(-1)} className="icon-btn h-7 w-7" aria-label="上一周"><Icon name="chevronLeft" size={15} /></button>
+            <button onClick={openMonthPicker} className="rounded-[10px] bg-surface px-2 py-1 text-[10px] text-text">本周</button>
+            <button onClick={() => shiftWeek(1)} className="icon-btn h-7 w-7" aria-label="下一周"><Icon name="chevronRight" size={15} /></button>
           </div>
         </div>
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5">
           {weekDates.map((date) => {
             const isToday = date.key === today;
             const log = state.logs[date.key];
             const hasRecord = !!log?.records.length;
             return (
               <div key={date.key} className="flex flex-col items-center">
-                <span className={`mb-1 text-[10px] ${isToday ? 'text-primary' : 'text-textMuted'}`}>{isToday ? '今天' : date.weekday}</span>
-                <button onClick={() => setSelectedDate(date.key)} className={`grid h-9 w-9 place-items-center rounded-full text-sm font-semibold tabular-nums transition-colors ${isToday ? 'bg-primary text-primaryText' : 'bg-surface text-text'}`}>{date.day}</button>
-                <span className={`mt-1 h-1.5 w-1.5 rounded-full ${log?.isCheatDay ? 'bg-dotWarm' : hasRecord ? 'bg-dotGreen' : 'bg-transparent'}`} />
+                <span className={`mb-0.5 text-[9px] ${isToday ? 'text-primary' : 'text-textMuted'}`}>{isToday ? '今天' : date.weekday}</span>
+                <button onClick={() => setSelectedDate(date.key)} className={`grid h-7 w-7 place-items-center rounded-full text-xs font-semibold tabular-nums ${isToday ? 'bg-primary text-primaryText' : 'bg-surface text-text'}`}>{date.day}</button>
+                <span className={`mt-0.5 h-1 w-1 rounded-full ${log?.isCheatDay ? 'bg-dotWarm' : hasRecord ? 'bg-dotGreen' : 'bg-transparent'}`} />
               </div>
             );
           })}
         </div>
-        <div className="flex items-center justify-between rounded-2xl bg-surface px-3 py-2.5">
-          <span className="muted">本周平均热量差 · 完整记录 {weekStats.perfect} 天</span>
-          <span className="text-sm font-bold text-text tabular-nums">{weekStats.avgText}</span>
+        <div className="flex items-center justify-between rounded-xl bg-surface px-2.5 py-2">
+          <span className="text-[10px] text-textMuted">本周平均热量差 · 完整记录 {weekStats.perfect} 天</span>
+          <span className="text-xs font-bold text-text tabular-nums">{weekStats.avgText}</span>
         </div>
         {selectedDate && (
-          <div className="flex items-center justify-between rounded-2xl bg-greenSoft px-3 py-2.5">
-            <span className="text-xs text-text/80 tabular-nums">{formatDateCN(selectedDate)} · {selectedLog?.records.length ?? 0} 餐 · {selectedTotal} kcal</span>
-            <span className="flex items-center gap-2">
-              <button onClick={() => setDayDetailOpen(true)} className="text-xs font-medium text-primary">查看</button>
-              <button onClick={() => setSelectedDate(null)} className="muted">收起</button>
+          <div className="flex items-center justify-between rounded-xl bg-greenSoft px-2.5 py-2">
+            <span className="truncate text-[10px] text-text/80 tabular-nums">{formatDateCN(selectedDate)} · {selectedLog?.records.length ?? 0} 餐 · {selectedTotal} kcal</span>
+            <span className="ml-2 flex shrink-0 items-center gap-2">
+              <button onClick={() => setDayDetailOpen(true)} className="text-[10px] font-medium text-primary">查看</button>
+              <button onClick={() => setSelectedDate(null)} className="text-[10px] text-textMuted">收起</button>
             </span>
           </div>
         )}
       </section>
 
-      <section className="card space-y-2">
+      <section className="card space-y-2 p-2.5">
+        <div className="grid grid-cols-3 gap-2">
+          <button onClick={() => setExerciseOpen(true)} className="flex h-[62px] flex-col items-center justify-center gap-0.5 rounded-[14px] bg-greenSoft px-1">
+            <span className="grid h-6 w-6 place-items-center rounded-lg bg-card text-greenText"><Icon name="walk" size={14} /></span>
+            <span className="text-[10px] font-bold text-text">运动打卡</span>
+            <span className="max-w-full truncate text-[8px] text-text/70 tabular-nums">{activeCalories > 0 ? `已消耗 ${activeCalories} kcal` : '今天还没运动'}</span>
+          </button>
+          <button onClick={() => setManualMeal(getMealByTime())} className="flex h-[62px] flex-col items-center justify-center gap-0.5 rounded-[14px] bg-yellowSoft px-1">
+            <span className="grid h-6 w-6 place-items-center rounded-lg bg-card text-yellowText"><Icon name="edit" size={14} /></span>
+            <span className="text-[10px] font-bold text-text">手动记录</span>
+            <span className="text-[8px] text-text/70">自己选更准确</span>
+          </button>
+          <div className="relative flex h-[62px] flex-col items-center justify-center rounded-[14px] bg-cyanSoft px-1">
+            <button onClick={openCup} className="absolute right-1 top-1 grid h-5 w-5 place-items-center text-cyanText" aria-label="水杯设置"><Icon name="settings" size={12} /></button>
+            <button onClick={openWaterSheet} className="flex h-full w-full flex-col items-center justify-center gap-0.5">
+              <span className="grid h-6 w-6 place-items-center rounded-lg bg-card text-cyanText"><Icon name="cup" size={14} /></span>
+              <span className="text-[10px] font-bold text-text">喝水</span>
+              <span className="text-[8px] text-text/70 tabular-nums">{todayWaterMl}/{state.waterGoal} ml</span>
+            </button>
+            {undoWaterVisible && <button onClick={undoWater} className="absolute bottom-1 right-1 rounded-full bg-card px-1.5 py-0.5 text-[9px] text-primary shadow-card">撤销</button>}
+          </div>
+        </div>
+        <button onClick={() => photoInput.current?.click()} className="flex min-h-[46px] w-full items-center gap-2.5 rounded-[14px] bg-[#FFF0E6] px-3 py-2 text-left">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-card text-greenText"><Icon name="camera" size={15} /></span>
+          <span className="flex-1 text-[12px] font-bold text-text">拍照识别卡路里</span>
+          <span className="text-[10px] text-text/70">拍一下更省事</span>
+        </button>
+        <button onClick={() => navigate('/eat')} className="flex min-h-[66px] w-full items-center gap-3 rounded-[16px] bg-[#FFFBEB] px-3.5 py-3 text-left">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-card text-xl">🍽️</span>
+          <span className="min-w-0 flex-1 text-[15px] font-black text-text">今天不知道吃什么？</span>
+          <span className="shrink-0 rounded-full bg-primaryDeep px-4 py-2 text-[11px] font-bold text-primaryText">帮我选一餐 →</span>
+        </button>
+      </section>
+
+      <section className="card space-y-2 p-3.5">
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[11px] text-textMuted">今日摄入</p>
+            <p className="mt-0.5 text-[28px] font-bold leading-none text-text tabular-nums">{todayTotal} <span className="text-xs font-normal text-textMuted">/ {state.calorieGoal} kcal</span></p>
+          </div>
+          <span className={`ml-auto shrink-0 whitespace-nowrap text-[10px] font-medium tabular-nums ${remaining >= 0 ? 'text-primary' : 'text-warn'}`}>{remaining >= 0 ? `还可用 ${remaining} kcal` : `超出 ${Math.abs(remaining)} kcal`}</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-surface"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${caloriePercent}%` }} /></div>
+        <div className="grid grid-cols-3 gap-1.5">
+          <button onClick={() => setDetailOpen('intake')} className="rounded-[12px] bg-greenSoft px-1.5 py-2 text-center" aria-label="查看已摄入明细">
+            <p className="text-sm font-bold text-greenText tabular-nums">{todayTotal}</p>
+            <p className="text-[9px] text-text/70">已摄入</p>
+          </button>
+          <button onClick={() => setDetailOpen('activity')} className="rounded-[12px] bg-cyanSoft px-1.5 py-2 text-center" aria-label="查看活动消耗明细">
+            <p className="text-sm font-bold text-cyanText tabular-nums">{activeCalories > 0 ? activeCalories : '—'}</p>
+            <p className="text-[9px] text-text/70">活动消耗</p>
+          </button>
+          <button onClick={() => setDetailOpen('deficit')} className="rounded-[12px] bg-surface px-1.5 py-2 text-center" aria-label="查看预计热量差明细">
+            <p className={`text-sm font-bold tabular-nums ${deficitTone}`}>{deficitText}</p>
+            <p className="text-[9px] text-text/70">预计热量差</p>
+          </button>
+        </div>
+        {expectedDeficit === null ? (
+          <p className="text-[10px] text-textMuted">补充基础代谢数据后，这里会自动计算热量差。</p>
+        ) : deficitPositive ? (
+          <p className="text-[10px] text-textMuted">今天有缺口哦，继续保持！</p>
+        ) : (
+          <p className="text-[10px] text-textMuted">今天吃得很开心，明天继续加油！</p>
+        )}
+      </section>
+
+      <section className="card space-y-2 p-3">
         <div className="flex items-center justify-between">
-          <h2 className="section-title">今天的餐食</h2>
-          <span className="muted tabular-nums">已记录 {todayLog.records.length} / {mainMeals.length}</span>
+          <h2 className="text-[15px] font-bold text-text">照片小记</h2>
+          <button onClick={() => timelineInput.current?.click()} className="text-[11px] font-medium text-primary">添加照片</button>
+        </div>
+        {state.photoTimeline.length > 0 && <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{state.photoTimeline.map((photo, i) => <img key={`${photo.date}-${i}`} src={photo.imageDataUrl} alt={formatDateCN(photo.date, false)} className="h-12 w-12 shrink-0 rounded-xl object-cover" />)}</div>}
+        {pendingPhoto && <div className="space-y-2"><img src={pendingPhoto} alt="待保存" className="h-28 w-full rounded-xl object-cover" /><button onClick={() => { dispatch({ type: 'ADD_PHOTO', photo: { date: today, imageDataUrl: pendingPhoto } }); setPendingPhoto(null); notify('照片收好啦'); }} className="btn-primary w-full text-xs">保存照片</button></div>}
+      </section>
+
+      <section className="card space-y-0.5 p-3">
+        <div className="flex items-center justify-between pb-1">
+          <h2 className="text-[15px] font-bold text-text">今天的餐食</h2>
+          <span className="text-[10px] text-textMuted tabular-nums">已记录 {todayLog.records.length} / {mainMeals.length}</span>
         </div>
         {mainMeals.map((meal, index) => {
           const records = grouped[meal];
           const total = records.reduce((sum, r) => sum + r.calories, 0);
+          const skipped = skippedMeals.includes(meal);
           return (
-            <div key={meal} className={`flex items-center gap-3 py-2.5 ${index > 0 ? 'border-t border-border' : ''}`}>
-              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-lg ${mealTint[meal]}`}>{mealEmoji[meal]}</span>
+            <div key={meal} className={`flex items-center gap-2.5 py-1.5 ${index > 0 ? 'border-t border-border' : ''}`}>
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-base ${mealTint[meal]}`}>{mealEmoji[meal]}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-text">{mealLabels[meal]}</p>
-                <p className="muted truncate tabular-nums">{records.length ? records.map((r) => r.name).join('、') : meal === 'late' ? '想吃就记，不用克制' : '还没有记录'}</p>
+                <p className="text-xs font-semibold text-text">{mealLabels[meal]}</p>
+                <p className="truncate text-[10px] text-textMuted tabular-nums">{records.length ? records.map((r) => r.name).join('、') : skipped ? '没吃' : meal === 'late' ? '饿了就吃点，没关系' : '还没有记录'}</p>
               </div>
               {records.length > 0 ? (
-                <button onClick={() => openEditor(today, records[0])} className="text-sm font-bold text-text tabular-nums">{total} kcal</button>
+                <button onClick={() => openEditor(today, records[0])} className="text-xs font-bold text-text tabular-nums">{total} kcal</button>
+              ) : skipped ? (
+                <button onClick={() => dispatch({ type: 'SET_MEAL_SKIPPED', date: today, meal, skipped: false })} className="text-[10px] text-textMuted">没吃</button>
               ) : (
-                <button onClick={() => setManualMeal(meal)} className="grid h-11 w-11 place-items-center rounded-full bg-primary text-primaryText shadow-card" aria-label={`添加${mealLabels[meal]}`}><Icon name="plus" size={18} /></button>
+                <button onClick={() => setManualMeal(meal)} className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primaryText shadow-card" aria-label={`添加${mealLabels[meal]}`}><Icon name="plus" size={16} /></button>
               )}
             </div>
           );
         })}
-        {todayLog.isCheatDay && <p className="rounded-2xl bg-peachSoft p-3 text-xs text-peachText">今天已标记为放纵餐，快乐也被认真收下了。</p>}
-        {remaining < 0 && !todayLog.isCheatDay && <button onClick={() => { dispatch({ type: 'MARK_CHEAT', date: today }); notify('放纵餐已标记，诚实记录值得一颗星'); }} className="btn-secondary w-full text-xs">标记为放纵餐 · +1 星</button>}
-      </section>
-
-      <section className="card space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="section-title">照片小记</h2>
-          <span className="muted">只留给自己看</span>
-        </div>
-        <button onClick={() => timelineInput.current?.click()} className="btn-secondary w-full text-xs">添加一张照片</button>
-        {state.photoTimeline.length > 0 && <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">{state.photoTimeline.map((photo, i) => <img key={`${photo.date}-${i}`} src={photo.imageDataUrl} alt={formatDateCN(photo.date, false)} className="h-16 w-16 shrink-0 rounded-2xl object-cover" />)}</div>}
-        {pendingPhoto && <div className="space-y-2"><img src={pendingPhoto} alt="待保存" className="h-36 w-full rounded-2xl object-cover" /><button onClick={() => { dispatch({ type: 'ADD_PHOTO', photo: { date: today, imageDataUrl: pendingPhoto } }); setPendingPhoto(null); notify('照片收好啦'); }} className="btn-primary w-full text-xs">保存照片</button></div>}
+        {todayLog.isCheatDay && <p className="rounded-xl bg-peachSoft px-2.5 py-2 text-[10px] text-peachText">今天已标记为放纵餐，快乐也被认真收下了。</p>}
+        {remaining < 0 && !todayLog.isCheatDay && <button onClick={() => { dispatch({ type: 'MARK_CHEAT', date: today }); notify('放纵餐已标记，诚实记录值得一颗星'); }} className="btn-secondary mt-1 w-full text-[11px]">标记为放纵餐 · +1 星</button>}
       </section>
 
       <BottomSheet open={exerciseOpen} onClose={() => setExerciseOpen(false)} eyebrow="运动打卡" title="今天想动一动吗？">
@@ -579,6 +636,46 @@ export default function RecordPage() {
         </div>
       </BottomSheet>
 
+      <BottomSheet open={detailOpen !== null} onClose={() => setDetailOpen(null)} eyebrow="今日明细" title={detailOpen === 'intake' ? '已摄入来源' : detailOpen === 'activity' ? '活动消耗来源' : '预计热量差怎么算'}>
+        <div className="space-y-2 pb-2">
+          {detailOpen === 'intake' && (
+            todayLog.records.length ? todayLog.records.map((record) => (
+              <div key={record.id} className="flex items-center justify-between rounded-2xl bg-surface px-3 py-2.5">
+                <span className="min-w-0 truncate text-xs text-text">{mealLabels[record.mealType ?? 'unknown']} · {record.name}{record.grams ? ` ${record.grams}g` : ''}</span>
+                <span className="shrink-0 text-xs font-bold text-text tabular-nums">{record.calories} kcal</span>
+              </div>
+            )) : <p className="py-4 text-center text-xs text-textMuted">今天还没有饮食记录。</p>
+          )}
+          {detailOpen === 'activity' && (
+            <>
+              {todayActivities.length ? todayActivities.map((log) => (
+                <div key={log.id} className="flex items-center justify-between rounded-2xl bg-surface px-3 py-2.5">
+                  <span className="text-xs text-text">{log.name} · {log.time}</span>
+                  <span className="text-xs font-bold text-cyanText tabular-nums">{log.calories} kcal</span>
+                </div>
+              )) : <p className="py-2 text-center text-xs text-textMuted">今天还没有运动打卡。</p>}
+              {stepCalories > 0 && (
+                <div className="flex items-center justify-between rounded-2xl bg-surface px-3 py-2.5">
+                  <span className="text-xs text-text">步数折算</span>
+                  <span className="text-xs font-bold text-cyanText tabular-nums">{stepCalories} kcal</span>
+                </div>
+              )}
+            </>
+          )}
+          {detailOpen === 'deficit' && (
+            <div className="space-y-2">
+              <div className="space-y-1.5 rounded-2xl bg-surface p-3 text-xs">
+                <p className="flex justify-between"><span className="text-textMuted">基础代谢</span><span className="font-semibold text-text tabular-nums">{state.bmr > 0 ? `${state.bmr} kcal` : '未设置'}</span></p>
+                <p className="flex justify-between"><span className="text-textMuted">活动消耗</span><span className="font-semibold text-cyanText tabular-nums">{activeCalories} kcal</span></p>
+                <p className="flex justify-between"><span className="text-textMuted">已摄入</span><span className="font-semibold text-text tabular-nums">{todayTotal} kcal</span></p>
+                <p className="flex justify-between border-t border-border pt-1.5"><span className="font-medium text-text">预计热量差</span><span className={`font-bold tabular-nums ${deficitTone}`}>{deficitText}</span></p>
+              </div>
+              <p className="muted text-center text-[11px]">公式：基础代谢 + 活动消耗 - 已摄入</p>
+            </div>
+          )}
+        </div>
+      </BottomSheet>
+
       <Modal open={customOpen} onClose={() => setCustomOpen(false)} title="自定义运动" z="z-[90]">
         <div className="space-y-3">
           <input value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder="运动名称，如游泳" className="w-full rounded-2xl bg-surface px-4 py-3 text-sm text-text outline-none" />
@@ -604,25 +701,46 @@ export default function RecordPage() {
 
       <Modal open={!!manualMeal} onClose={() => setManualMeal(null)} title={manualMeal ? `添加${mealLabels[manualMeal]}` : ''}>
         <div className="space-y-3">
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="食物名称" className="w-full rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="食物名称，如番茄牛腩饭" className="w-full rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+          <button onClick={smartEstimate} className="btn-secondary w-full text-xs">智能估算热量</button>
           <div className="grid grid-cols-2 gap-2">
             <input value={form.calories} onChange={(e) => setForm({ ...form, calories: e.target.value })} placeholder="热量 kcal" inputMode="numeric" className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
             <input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="份数" inputMode="decimal" className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
           </div>
+          <p className="muted">估算只是参考，填好可以随时改。</p>
           <label className="flex items-center gap-2 text-xs text-text/75"><input type="checkbox" checked={form.honest} onChange={(e) => setForm({ ...form, honest: e.target.checked })} />这是放纵餐，如实记录（额外 +1 星）</label>
-          <button onClick={saveManual} className="btn-primary w-full">记下来啦</button>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={skipMeal} className="btn-secondary text-xs">今天没吃这一餐</button>
+            <button onClick={saveManual} className="btn-primary text-xs">记下来啦</button>
+          </div>
         </div>
       </Modal>
 
-      <Modal open={!!photoPreview} onClose={() => { setPhotoPreview(null); setResult(null); }} title="拍照识别">
+      <Modal open={!!photoPreview && !result} onClose={() => { setPhotoPreview(null); setResult(null); }} title="拍照识别">
         <div className="space-y-3">
-          <p className="muted">演示识别，接口预留于 recognizeFood.ts。</p>
+          <p className="muted">小馋先看看这是什么，结果出来后你再确认。</p>
           {photoPreview && <img src={photoPreview} alt="食物预览" className="h-44 w-full rounded-2xl object-cover" />}
           <div className="flex flex-wrap gap-2">{(['breakfast', 'lunch', 'dinner', 'snack', 'late'] as MealType[]).map((item) => <button key={item} onClick={() => setPhotoMeal(item)} className={`chip text-xs ${photoMeal === item ? 'bg-primary text-primaryText' : 'bg-surface text-textMuted'}`}>{mealLabels[item]}</button>)}</div>
           <input value={photoAmount} onChange={(e) => setPhotoAmount(e.target.value)} inputMode="decimal" placeholder="份数" className="w-full rounded-2xl bg-surface px-4 py-2.5 text-sm text-text outline-none" />
-          {recognizing ? <p className="py-6 text-center text-sm text-textMuted">小馋正在偷偷看图…</p> : result ? <div className="space-y-2 rounded-2xl bg-surface p-3"><p className="font-semibold text-text">识别到：{result.name}</p><p className="text-xs text-text/75 tabular-nums">约 {result.calories} kcal</p><p className="text-xs text-primary">{result.feedback}</p><button onClick={saveRecognized} className="btn-primary w-full">就它了，存入记录</button></div> : null}
+          {recognizing && <p className="py-4 text-center text-sm text-textMuted">小馋正在偷偷看图…</p>}
         </div>
       </Modal>
+
+      <BottomSheet open={!!result && !recognizing} onClose={() => { setResult(null); setPhotoPreview(null); }} eyebrow="拍照识别" title="确认与修改">
+        <div className="space-y-3 pb-2">
+          {photoPreview && <img src={photoPreview} alt="食物预览" className="h-24 w-full rounded-2xl object-cover" />}
+          <input value={confirmName} onChange={(e) => setConfirmName(e.target.value)} placeholder="食物名称" className="w-full rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+          <div className="grid grid-cols-2 gap-2">
+            <input value={confirmGrams} onChange={(e) => setConfirmGrams(e.target.value)} inputMode="numeric" placeholder="克数 g" className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+            <input value={confirmCalories} onChange={(e) => setConfirmCalories(e.target.value)} inputMode="numeric" placeholder="热量 kcal" className="rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+          </div>
+          <div className="flex flex-wrap gap-2">{(['breakfast', 'lunch', 'dinner', 'snack', 'late'] as MealType[]).map((item) => <button key={item} onClick={() => setPhotoMeal(item)} className={`chip text-xs ${photoMeal === item ? 'bg-primary text-primaryText' : 'bg-surface text-textMuted'}`}>{mealLabels[item]}</button>)}</div>
+          <input value={photoAmount} onChange={(e) => setPhotoAmount(e.target.value)} inputMode="decimal" placeholder="份数" className="w-full rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none" />
+          {result && <p className="rounded-2xl bg-surface px-3 py-2 text-[11px] text-textMuted">{result.feedback}</p>}
+          <button onClick={confirmRecognized} className="btn-primary w-full">确认保存</button>
+          <p className="muted text-center text-[11px]">确认后才会写入记录，名称和热量都可以改。</p>
+        </div>
+      </BottomSheet>
 
       <Modal open={!!editing} onClose={() => setEditing(null)} title="修改这一餐">
         {editing && <div className="space-y-3">

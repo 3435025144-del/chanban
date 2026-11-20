@@ -32,6 +32,7 @@ import { emptyDayLog, expToNext, initialState, loadState, STORAGE_KEY } from '..
 type Action =
   | { type: 'OPEN_APP'; date: string }
   | { type: 'ADD_RECORD'; record: FoodRecord }
+  | { type: 'SET_MEAL_SKIPPED'; date: string; meal: string; skipped: boolean }
   | { type: 'UPDATE_RECORD'; date: string; record: FoodRecord }
   | { type: 'DELETE_RECORD'; date: string; recordId: string }
   | { type: 'MARK_CHEAT'; date: string }
@@ -152,12 +153,16 @@ function reduce(state: AppState, action: Action): AppState {
     case 'ADD_RECORD': {
       const logs = ensureLog(state, action.record.date);
       const day = logs[action.record.date];
+      const currentSkipped = state.skippedMealsByDate[action.record.date] ?? [];
       const base: AppState = {
         ...state,
         logs: {
           ...logs,
           [action.record.date]: { ...day, records: [...day.records, action.record] },
         },
+        skippedMealsByDate: action.record.mealType
+          ? { ...state.skippedMealsByDate, [action.record.date]: currentSkipped.filter((meal) => meal !== action.record.mealType) }
+          : state.skippedMealsByDate,
         totalMealsLogged: state.totalMealsLogged + 1,
         avatar: addExp(
           { ...state.avatar, mood: action.record.calories >= 600 ? '满足地打嗝' : '元气满满' },
@@ -169,6 +174,13 @@ function reduce(state: AppState, action: Action): AppState {
         ? earn(withStar, action.record.date, 1, '如实记录')
         : withStar;
       return applyStreak(withHonest, action.record.date);
+    }
+    case 'SET_MEAL_SKIPPED': {
+      const current = state.skippedMealsByDate[action.date] ?? [];
+      const next = action.skipped
+        ? Array.from(new Set([...current, action.meal]))
+        : current.filter((meal) => meal !== action.meal);
+      return { ...state, skippedMealsByDate: { ...state.skippedMealsByDate, [action.date]: next } };
     }
     case 'UPDATE_RECORD': {
       const logs = state.logs[action.date];

@@ -94,9 +94,6 @@ export default function StarBoxPage() {
         <div className="relative mx-auto grid h-36 w-36 place-items-center rounded-[32px] bg-greenSoft">
           <span className="absolute inset-3 rounded-[26px] border border-dashed border-primary/50" />
           <Icon name="gift" size={64} className={`relative text-primary ${pulling ? 'animate-shake' : 'animate-idle'}`} />
-          {hasUnseen() && (
-            <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-peachStrong ring-2 ring-card" />
-          )}
         </div>
         <div>
           <p className="text-base font-semibold text-text">{pulling ? '正在拆开…' : '今天要拆哪一盒？'}</p>

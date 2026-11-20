@@ -10,17 +10,32 @@ import {
 } from '../data/avatarOptions';
 import type { AvatarConfig, Personality, TasteProfile } from '../types';
 import { todayKey } from '../utils/date';
+import { findItem } from '../data/blindBoxItems';
 
 const personalityLabel: Record<Personality, string> = { gentle: '温柔鼓励', sassy: '俏皮吐槽', funny: '搞笑陪伴' };
+const BASE_UNLOCKED = ['bob', 'hoodie', 'shortsMix', 'sneaker'];
+const LOCKABLE_FIELDS: OptionField[] = ['hair', 'outfit', 'bottom', 'shoes', 'accessory', 'background', 'action'];
+type OptionField = 'face' | 'hair' | 'skin' | 'outfit' | 'bottom' | 'shoes' | 'accessory' | 'background' | 'action';
 
-function OptionRow<T extends { id: string; label: string }>({ title, options, value, onChange }: { title: string; options: T[]; value: string; onChange: (id: string) => void }) {
+function OptionRow<T extends { id: string; label: string }>({ title, options, value, onChange, isLocked }: {
+  title: string;
+  options: T[];
+  value: string;
+  onChange: (id: string) => void;
+  isLocked?: (id: string) => boolean;
+}) {
   return (
     <div className="space-y-2">
       <p className="text-xs font-medium text-text/75">{title}</p>
       <div className="flex flex-wrap gap-1.5">
-        {options.map((option) => (
-          <button key={option.id} onClick={() => onChange(option.id)} className={`chip text-xs ${value === option.id ? 'bg-primary text-primaryText' : 'bg-surface text-textMuted'}`}>{option.label}</button>
-        ))}
+        {options.map((option) => {
+          const itemLocked = isLocked?.(option.id) ?? false;
+          return (
+            <button key={option.id} onClick={() => onChange(option.id)} className={`chip text-xs ${value === option.id ? 'bg-primary text-primaryText' : itemLocked ? 'bg-surface text-textMuted opacity-60' : 'bg-surface text-textMuted'}`}>
+              {option.label}{itemLocked ? ' 🔒' : ''}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -41,9 +56,23 @@ export default function SettingsPage() {
     setDraft(state.avatar.equipped); setTaste(state.tasteProfile);
   }, [state.calorieGoal, state.height, state.waterGoal, state.avatar.equipped, state.tasteProfile]);
 
+  const isLocked = (field: OptionField, id: string) => {
+    if (!LOCKABLE_FIELDS.includes(field)) return false;
+    if (BASE_UNLOCKED.includes(id) || state.blindBox.ownedItems.includes(id)) return false;
+    return !!findItem(id);
+  };
+  const chooseOption = (field: OptionField, id: string) => {
+    if (isLocked(field, id)) notify('该物品尚未解锁，去盲盒抽取吧');
+    setDraft((current) => ({ ...current, [field]: id }));
+  };
+
   const save = () => {
     const goalValue = Number(goal); const heightValue = Number(height); const waterValue = Number(waterGoal);
     if (!goalValue || !heightValue || !waterValue) { notify('几个数字都填一下就可以啦'); return; }
+    if (LOCKABLE_FIELDS.some((field) => isLocked(field, draft[field] ?? ''))) {
+      notify('该物品尚未解锁，去盲盒抽取吧');
+      return;
+    }
     dispatch({ type: 'SET_GOAL', goal: goalValue });
     dispatch({ type: 'SET_HEIGHT', height: heightValue });
     dispatch({ type: 'SET_WATER_GOAL', goal: waterValue });
@@ -77,15 +106,15 @@ export default function SettingsPage() {
         <h2 className="section-title">分身信息</h2>
         <div className="space-y-2"><label className="text-xs text-text/75">名字</label><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="w-full rounded-2xl bg-surface px-4 py-3 text-sm text-text outline-none" /></div>
         <div className="space-y-2"><p className="text-xs font-medium text-text/75">性格</p><div className="grid grid-cols-3 gap-2">{(Object.keys(personalityLabel) as Personality[]).map((personality) => <button key={personality} onClick={() => setDraft({ ...draft, personality })} className={`rounded-2xl py-2 text-[11px] ${draft.personality === personality ? 'bg-primary text-primaryText' : 'bg-surface text-textMuted'}`}>{personalityLabel[personality]}</button>)}</div></div>
-        <OptionRow title="脸型" options={faceOptions} value={draft.face} onChange={(face) => setDraft({ ...draft, face })} />
-        <OptionRow title="发型" options={hairOptions} value={draft.hair} onChange={(hair) => setDraft({ ...draft, hair })} />
-        <OptionRow title="肤色" options={skinOptions} value={draft.skin} onChange={(skin) => setDraft({ ...draft, skin })} />
-        <OptionRow title="上装" options={outfitOptions} value={draft.outfit} onChange={(outfit) => setDraft({ ...draft, outfit })} />
-        <OptionRow title="下装" options={bottomOptions} value={draft.bottom ?? 'shortsMix'} onChange={(bottom) => setDraft({ ...draft, bottom })} />
-        <OptionRow title="鞋子" options={shoesOptions} value={draft.shoes ?? 'sneaker'} onChange={(shoes) => setDraft({ ...draft, shoes })} />
-        <OptionRow title="配饰" options={accessoryOptions} value={draft.accessory} onChange={(accessory) => setDraft({ ...draft, accessory })} />
-        <OptionRow title="场景" options={backgroundOptions} value={draft.background ?? 'sunny'} onChange={(background) => setDraft({ ...draft, background })} />
-        <OptionRow title="动作" options={actionOptions} value={draft.action ?? 'none'} onChange={(action) => setDraft({ ...draft, action })} />
+        <OptionRow title="脸型" options={faceOptions} value={draft.face} onChange={(face) => chooseOption('face', face)} />
+        <OptionRow title="发型" options={hairOptions} value={draft.hair} onChange={(hair) => chooseOption('hair', hair)} isLocked={(id) => isLocked('hair', id)} />
+        <OptionRow title="肤色" options={skinOptions} value={draft.skin} onChange={(skin) => chooseOption('skin', skin)} />
+        <OptionRow title="上装" options={outfitOptions} value={draft.outfit} onChange={(outfit) => chooseOption('outfit', outfit)} isLocked={(id) => isLocked('outfit', id)} />
+        <OptionRow title="下装" options={bottomOptions} value={draft.bottom ?? 'shortsMix'} onChange={(bottom) => chooseOption('bottom', bottom)} isLocked={(id) => isLocked('bottom', id)} />
+        <OptionRow title="鞋子" options={shoesOptions} value={draft.shoes ?? 'sneaker'} onChange={(shoes) => chooseOption('shoes', shoes)} isLocked={(id) => isLocked('shoes', id)} />
+        <OptionRow title="配饰" options={accessoryOptions} value={draft.accessory} onChange={(accessory) => chooseOption('accessory', accessory)} isLocked={(id) => isLocked('accessory', id)} />
+        <OptionRow title="场景" options={backgroundOptions} value={draft.background ?? 'sunny'} onChange={(background) => chooseOption('background', background)} isLocked={(id) => isLocked('background', id)} />
+        <OptionRow title="动作" options={actionOptions} value={draft.action ?? 'none'} onChange={(action) => chooseOption('action', action)} isLocked={(id) => isLocked('action', id)} />
       </section>
 
       <button onClick={save} className="btn-primary w-full">保存设置</button>
