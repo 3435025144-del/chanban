@@ -65,7 +65,7 @@ function conditionsMatch(food: FoodItem, active: string[]): boolean {
 export default function EatPage() {
   const { state, dispatch, todayTotal, notify } = useApp();
 
-  const [mode, setMode] = useState<Mode>('find');
+  const [mode, setMode] = useState<Mode>('recommend');
   const [findWay, setFindWay] = useState<FindWay | null>('delivery');
   const [meal, setMeal] = useState<MealType>(() => getMealByTime());
   const [query, setQuery] = useState('');

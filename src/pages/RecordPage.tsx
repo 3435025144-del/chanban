@@ -402,18 +402,6 @@ export default function RecordPage() {
         )}
       </section>
 
-      <button onClick={() => photoInput.current?.click()} className="relative min-h-[124px] w-full overflow-hidden rounded-[26px] bg-primaryDeep p-4 text-left shadow-card">
-        <span className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-white/10" />
-        <span className="relative flex items-center gap-3.5">
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[20px] bg-card/15 text-primaryText"><Icon name="camera" size={26} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[19px] font-bold text-primaryText">拍照识别卡路里</span>
-            <span className="mt-1 block text-[12px] leading-relaxed text-primaryText/85">拍一下，小馋帮你识别食物和热量</span>
-          </span>
-        </span>
-        <span className="relative mt-3 block text-[11px] font-medium text-primaryText/70">对准食物拍一张，识别后可再调整份数</span>
-      </button>
-
       <button onClick={() => navigate('/eat')} className="relative min-h-[124px] w-full overflow-hidden rounded-[26px] border border-[#F3EBD8] bg-[#FFFDF5] p-4 text-left shadow-card">
         <span className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[#FFF3D6]" />
         <span className="relative flex items-center gap-3.5">
@@ -449,6 +437,18 @@ export default function RecordPage() {
           <span className="text-[10px] text-text/70 tabular-nums">{activeCalories > 0 ? `已消耗 ${activeCalories} kcal` : '今天还没运动'}</span>
         </button>
       </div>
+
+      <button onClick={() => photoInput.current?.click()} className="relative min-h-[124px] w-full overflow-hidden rounded-[26px] bg-primaryDeep p-4 text-left shadow-card">
+        <span className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-white/10" />
+        <span className="relative flex items-center gap-3.5">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[20px] bg-card/15 text-primaryText"><Icon name="camera" size={26} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[19px] font-bold text-primaryText">拍照识别卡路里</span>
+            <span className="mt-1 block text-[12px] leading-relaxed text-primaryText/85">拍一下，小馋帮你识别食物和热量</span>
+          </span>
+        </span>
+        <span className="relative mt-3 block text-[11px] font-medium text-primaryText/70">对准食物拍一张，识别后可再调整份数</span>
+      </button>
 
       <section className="card space-y-3">
         <div className="flex items-center justify-between">
