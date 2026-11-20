@@ -17,17 +17,17 @@ export const faceOptions: FaceOption[] = [
 ];
 
 export const hairOptions: HairOption[] = [
-  { id: 'bob', label: '波波头', color: '#F2A0A8' },
+  { id: 'bob', label: '波波头', color: '#E8C46F' },
   { id: 'ponytail', label: '马尾', color: '#5C4033' },
   { id: 'short', label: '短发', color: '#3E312C' },
   { id: 'bun', label: '丸子头', color: '#564037' },
-  { id: 'wavy', label: '小卷发', color: '#E992A4' },
+  { id: 'wavy', label: '小卷发', color: '#E99AAA' },
   { id: 'none', label: '光头', color: 'transparent' },
 ];
 
 export const skinOptions: SkinOption[] = [
   { id: 'ivory', label: '奶油白', color: '#FFE4D2' },
-  { id: 'warm', label: '暖蜜色', color: '#F8C9A8' },
+  { id: 'warm', label: '暖蜜色', color: '#FFE1CB' },
   { id: 'honey', label: '蜂蜜色', color: '#E9AE82' },
   { id: 'tan', label: '小麦色', color: '#CF8E63' },
   { id: 'rose', label: '粉粉的', color: '#FFD6C6' },
@@ -37,7 +37,7 @@ export const outfitOptions: OutfitOption[] = [
   { id: 'teeCoral', label: '橘子汽水T', color: '#FF8B72', accent: '#FFE0D5' },
   { id: 'hoodie', label: '慵懒连帽衫', color: '#F6D36B', accent: '#FFF0A8' },
   { id: 'sports', label: '元气运动服', color: '#7FA8E8', accent: '#E3EDFF' },
-  { id: 'dress', label: '草莓小裙子', color: '#F49AB0', accent: '#FFE3EA' },
+  { id: 'dress', label: '草莓小裙子', color: '#F39AB2', accent: '#FFDCE7' },
   { id: 'stripe', label: '海盐条纹衫', color: '#F4F0E6', accent: '#6FA9C9' },
   { id: 'coat', label: '焦糖小外套', color: '#C98F5E', accent: '#F7E6D4' },
 ];

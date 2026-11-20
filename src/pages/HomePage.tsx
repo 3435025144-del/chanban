@@ -112,9 +112,9 @@ export default function HomePage() {
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="muted">{getGreetingByHour(new Date().getHours())}</p>
-          <h1 className="mt-1 text-2xl font-bold text-ink">今天也慢慢来</h1>
+          <h1 className="mt-1 text-2xl font-bold text-text">今天也慢慢来</h1>
         </div>
-        <span className="chip shrink-0 bg-avocadoSoft text-xs font-medium text-avocadoInk">馋伴 · 陪你记录</span>
+        <span className="chip shrink-0 bg-greenSoft text-xs font-medium text-primaryText">馋伴 · 陪你记录</span>
       </header>
 
       <section className="card space-y-3">
@@ -124,7 +124,7 @@ export default function HomePage() {
             <button onClick={() => moveWeek(-1)} className="icon-btn h-8 w-8" aria-label="上一周">
               <Icon name="chevronLeft" size={17} />
             </button>
-            <button onClick={openPicker} className="chip bg-warm px-2.5 py-1.5 text-xs text-ink" aria-label="选择年月">
+            <button onClick={openPicker} className="chip bg-surface px-2.5 py-1.5 text-xs text-text" aria-label="选择年月">
               {anchorDate.slice(0, 4)}年{Number(anchorDate.slice(5, 7))}月
             </button>
             <button onClick={() => moveWeek(1)} className="icon-btn h-8 w-8" aria-label="下一周">
@@ -143,14 +143,14 @@ export default function HomePage() {
                 key={date}
                 onClick={() => setSelectedDate(date)}
                 className={`flex flex-col items-center rounded-2xl py-2 transition-all duration-150 active:scale-95 ${
-                  active ? 'bg-avocado text-avocadoInk shadow-card' : 'bg-white text-ink hover:bg-warm'
+                  active ? 'bg-primary text-primaryText shadow-card' : 'bg-card text-text hover:bg-surface'
                 }`}
                 aria-label={`${date}${hasMark ? '，有记录' : ''}`}
               >
-                <span className={`text-[10px] ${active ? 'text-avocadoInk/70' : 'text-muted'}`}>{weekday}</span>
+                <span className={`text-[10px] ${active ? 'text-primaryText/70' : 'text-textMuted'}`}>{weekday}</span>
                 <span className="mt-0.5 text-sm font-semibold">{Number(date.slice(-2))}</span>
-                <span className={`mt-1 h-1.5 w-1.5 rounded-full ${active ? 'bg-avocadoInk' : hasMark ? 'bg-avocado' : 'bg-transparent'}`} />
-                {isToday && !active && <span className="mt-0.5 text-[8px] text-avocadoInk">今</span>}
+                <span className={`mt-1 h-1.5 w-1.5 rounded-full ${active ? 'bg-primaryText' : hasMark ? 'bg-primary' : 'bg-transparent'}`} />
+                {isToday && !active && <span className="mt-0.5 text-[8px] text-primaryText">今</span>}
               </button>
             );
           })}
@@ -162,13 +162,13 @@ export default function HomePage() {
 
       <section className="card-important relative overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className="chip bg-warm text-xs text-avocadoInk">Lv.{state.avatar.level} · {state.avatar.equipped.name}</span>
-          <span className="chip bg-coralSoft text-xs font-medium text-coralInk">今日 +{todayStars} 星</span>
+          <span className="chip bg-surface text-xs text-primaryText">Lv.{state.avatar.level} · {state.avatar.equipped.name}</span>
+          <span className="chip bg-peachSoft text-xs font-medium text-primaryText">今日 +{todayStars} 星</span>
         </div>
         <button onClick={refreshLine} className="mx-auto block py-1 animate-idle" aria-label="和小馋互动">
           <Avatar config={state.avatar.equipped} size={220} />
         </button>
-        <p key={lineSeed} className="mx-auto max-w-[280px] text-center text-sm leading-relaxed text-ink/80 animate-pop-in">
+        <p key={lineSeed} className="mx-auto max-w-[280px] text-center text-sm leading-relaxed text-text/80 animate-pop-in">
           “{interactionLine}”
         </p>
         <button onClick={() => navigate('/record')} className="btn-primary mt-4 w-full">
@@ -180,19 +180,19 @@ export default function HomePage() {
       </section>
 
       <div className="grid grid-cols-3 gap-2">
-        <button onClick={addWater} className="card flex flex-col items-center gap-1 py-3 text-xs text-ink active:scale-95">
-          <Icon name="cup" size={20} className="text-avocadoInk" />
+        <button onClick={addWater} className="card flex flex-col items-center gap-1 py-3 text-xs text-text active:scale-95">
+          <Icon name="cup" size={20} className="text-primaryText" />
           记一杯
         </button>
-        <button onClick={walkWithAvatar} className="card flex flex-col items-center gap-1 py-3 text-xs text-ink active:scale-95">
-          <Icon name="walk" size={20} className="text-avocadoInk" />
+        <button onClick={walkWithAvatar} className="card flex flex-col items-center gap-1 py-3 text-xs text-text active:scale-95">
+          <Icon name="walk" size={20} className="text-primaryText" />
           走十分钟
         </button>
         <button
           onClick={() => navigate('/record', { state: { focus: 'photo' } })}
-          className="card flex flex-col items-center gap-1 py-3 text-xs text-ink active:scale-95"
+          className="card flex flex-col items-center gap-1 py-3 text-xs text-text active:scale-95"
         >
-          <Icon name="camera" size={20} className="text-avocadoInk" />
+          <Icon name="camera" size={20} className="text-primaryText" />
           拍照识别
         </button>
       </div>
@@ -200,28 +200,28 @@ export default function HomePage() {
       <div className="grid grid-cols-3 gap-2">
         <div className="card p-3">
           <p className="muted">今日摄入</p>
-          <p className="mt-2 text-lg font-bold text-ink">{todayTotal}</p>
+          <p className="mt-2 text-lg font-bold text-text">{todayTotal}</p>
           <p className="muted">/ {state.calorieGoal} kcal</p>
         </div>
         <div className="card p-3">
           <p className="muted">今日步数</p>
-          <p className="mt-2 text-lg font-bold text-ink">{todaySteps}</p>
+          <p className="mt-2 text-lg font-bold text-text">{todaySteps}</p>
           <p className="muted">陪分身走走</p>
         </div>
         <button onClick={openWeight} className="card p-3 text-left active:scale-95">
           <p className="muted">体重参考</p>
-          <p className="mt-2 text-lg font-bold text-ink">{todayWeight ?? '—'}</p>
+          <p className="mt-2 text-lg font-bold text-text">{todayWeight ?? '—'}</p>
           <p className="muted">{todayWeight ? 'kg · 点此更新' : '点此记录'}</p>
         </button>
       </div>
 
       <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title="选择年月">
         <div className="space-y-4">
-          <div className="flex items-center justify-between rounded-2xl bg-warm px-3 py-2">
+          <div className="flex items-center justify-between rounded-2xl bg-surface px-3 py-2">
             <button onClick={() => setPickerYear((y) => y - 1)} className="icon-btn h-8 w-8" aria-label="上一年">
               <Icon name="chevronLeft" size={17} />
             </button>
-            <span className="text-base font-semibold text-ink">{pickerYear} 年</span>
+            <span className="text-base font-semibold text-text">{pickerYear} 年</span>
             <button onClick={() => setPickerYear((y) => y + 1)} className="icon-btn h-8 w-8" aria-label="下一年">
               <Icon name="chevronRight" size={17} />
             </button>
@@ -232,7 +232,7 @@ export default function HomePage() {
                 key={month}
                 onClick={() => setPickerMonth(month)}
                 className={`rounded-2xl py-2.5 text-sm transition-colors active:scale-95 ${
-                  pickerMonth === month ? 'bg-avocado text-avocadoInk font-semibold' : 'bg-warm text-muted'
+                  pickerMonth === month ? 'bg-primary text-primaryText font-semibold' : 'bg-surface text-textMuted'
                 }`}
               >
                 {month}月
@@ -251,7 +251,7 @@ export default function HomePage() {
             onChange={(e) => setWeightInput(e.target.value)}
             placeholder="例如 58.5"
             inputMode="decimal"
-            className="w-full rounded-2xl bg-warm px-4 py-3 text-sm text-ink outline-none focus:ring-2 focus:ring-avocado/30"
+            className="w-full rounded-2xl bg-surface px-4 py-3 text-sm text-text outline-none focus:ring-2 focus:ring-primary/30"
           />
           <button onClick={saveWeight} className="btn-primary w-full">保存</button>
         </div>

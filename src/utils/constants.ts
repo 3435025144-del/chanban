@@ -1,5 +1,6 @@
 import { cupPresets } from '../data/cups';
-import type { AppState, DayLog, WaterLog } from '../types';
+import { ALL_TABOO_ITEMS, FLAVOR_OPTIONS, GOAL_OPTIONS } from '../data/tasteOptions';
+import type { AppState, DayLog, TasteProfile, WaterLog } from '../types';
 
 export const STORAGE_KEY = 'chanban-app-state-v1';
 
@@ -31,23 +32,34 @@ export function initialState(): AppState {
     },
     blindBox: { stars: 3, fragments: 0, ownedItems: [] },
     logs: {},
+    skippedMealsByDate: {},
     calorieGoal: 1500,
+    bmr: 1300,
     height: 165,
     weightRecords: {},
     waterByDate: {},
     waterLogs: [],
+    activityLogs: [],
     waterCup: { ...cupPresets[0] },
     waterGoal: 1600,
     stepsByDate: {},
+    activityStarDates: [],
     healthConnected: false,
     starLedger: [],
+    dailyEarnedByDate: {},
     dailyCheerDates: [],
     waterStarDates: [],
     walkStarDates: [],
+    moodStarDates: [],
+    moodLogs: {},
+    tasteProfile: { flavor: '清淡', flavors: ['清淡'], dietaryTaboos: [], dietaryTabooNotes: {}, avoid: [], goal: 'steady' },
+    activeCaloriesByDate: {},
     unseenItems: [],
     lastBoxResult: null,
     favoriteLooks: [],
     reminders: { water: true, meals: true, cheer: false },
+    reminderTimes: { morning: '08:00', noon: '12:00', evening: '20:00' },
+    guideSeen: false,
     photoTimeline: [],
     streakDays: 0,
     streakSevenRewarded: false,
@@ -56,6 +68,13 @@ export function initialState(): AppState {
     dailyRewardDates: [],
     totalMealsLogged: 0,
     totalCravingsResisted: 0,
+    friends: [],
+    friendPrivacy: 'friends',
+    friendTheme: '本周主题 · 清爽绿',
+    hamsterDecorOwned: [],
+    hamsterDecorEquipped: 'none',
+    age: undefined,
+    activityLevel: '轻度活动',
     appearanceVersion: 2,
   };
 }
@@ -88,33 +107,72 @@ export function loadState(): AppState {
       waterLogs = migrated;
     }
 
+    const rawTaste = parsed.tasteProfile as Partial<TasteProfile> | undefined;
+    const legacyFlavors = rawTaste && !Array.isArray(rawTaste.flavors)
+      ? (rawTaste.flavor ? [rawTaste.flavor] : [])
+      : [];
+    let flavors = rawTaste?.flavors ?? legacyFlavors;
+    flavors = flavors.filter((f) => (FLAVOR_OPTIONS as readonly string[]).includes(f));
+    if (flavors.length === 0) flavors = ['清淡'];
+    const dietaryTaboos = (rawTaste?.dietaryTaboos ?? []).filter((t) => ['过敏', '宗教', '医嘱'].includes(t));
+    const dietaryTabooNotes = rawTaste?.dietaryTabooNotes ?? {};
+    const avoid = (rawTaste?.avoid ?? []).filter((a) => (ALL_TABOO_ITEMS as readonly string[]).includes(a));
+    const rawGoal = rawTaste?.goal ?? base.tasteProfile.goal;
+    const goal = GOAL_OPTIONS.some((option) => option.id === rawGoal) ? rawGoal : 'steady';
+    const tasteProfile: TasteProfile = {
+      flavor: flavors[0],
+      flavors,
+      dietaryTaboos,
+      dietaryTabooNotes,
+      avoid,
+      goal,
+    };
+
     return {
       ...base,
       ...parsed,
       avatar: { ...base.avatar, ...parsed.avatar, equipped },
       blindBox: { ...base.blindBox, ...parsed.blindBox },
       logs: parsed.logs ?? {},
+      skippedMealsByDate: parsed.skippedMealsByDate ?? {},
       photoTimeline: parsed.photoTimeline ?? [],
       milestonesClaimed: parsed.milestonesClaimed ?? [],
       dailyRewardDates: parsed.dailyRewardDates ?? [],
       streakSevenRewarded: parsed.streakSevenRewarded ?? false,
+      bmr: parsed.bmr && parsed.bmr > 0 ? parsed.bmr : base.bmr,
       height: parsed.height ?? base.height,
       weightRecords: parsed.weightRecords ?? {},
       waterByDate: parsed.waterByDate ?? {},
       waterLogs,
+      activityLogs: parsed.activityLogs ?? [],
       waterCup: parsed.waterCup ?? base.waterCup,
       waterGoal: parsed.waterGoal ?? base.waterGoal,
       stepsByDate: parsed.stepsByDate ?? {},
+      activityStarDates: parsed.activityStarDates ?? [],
       healthConnected: parsed.healthConnected ?? false,
       starLedger: parsed.starLedger ?? [],
+      dailyEarnedByDate: parsed.dailyEarnedByDate ?? {},
       dailyCheerDates: parsed.dailyCheerDates ?? [],
       waterStarDates: parsed.waterStarDates ?? [],
       walkStarDates: parsed.walkStarDates ?? [],
+      moodStarDates: parsed.moodStarDates ?? [],
+      moodLogs: parsed.moodLogs ?? {},
+      tasteProfile,
+      activeCaloriesByDate: parsed.activeCaloriesByDate ?? {},
       unseenItems: parsed.unseenItems ?? [],
       lastBoxResult: parsed.lastBoxResult ?? null,
       lastBoxNewItemId: parsed.lastBoxNewItemId,
       favoriteLooks: parsed.favoriteLooks ?? [],
       reminders: { ...base.reminders, ...parsed.reminders },
+      reminderTimes: { ...base.reminderTimes, ...parsed.reminderTimes },
+      guideSeen: parsed.guideSeen ?? false,
+      friends: parsed.friends ?? base.friends,
+      friendPrivacy: parsed.friendPrivacy ?? base.friendPrivacy,
+      friendTheme: parsed.friendTheme ?? base.friendTheme,
+      hamsterDecorOwned: parsed.hamsterDecorOwned ?? base.hamsterDecorOwned,
+      hamsterDecorEquipped: parsed.hamsterDecorEquipped ?? base.hamsterDecorEquipped,
+      age: parsed.age,
+      activityLevel: parsed.activityLevel ?? base.activityLevel,
       appearanceVersion: 2,
     };
   } catch {

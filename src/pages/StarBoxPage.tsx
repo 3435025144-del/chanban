@@ -74,41 +74,38 @@ export default function StarBoxPage() {
 
       <section className="card flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-avocadoSoft text-avocadoInk"><Icon name="star" size={19} /></span>
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-greenSoft text-primary"><Icon name="star" size={19} /></span>
           <span>
-            <span className="block text-xs text-muted">可用星星</span>
-            <span className="block text-lg font-bold text-ink">{state.blindBox.stars}</span>
+            <span className="block text-xs text-textMuted">可用星星</span>
+            <span className="block text-lg font-bold text-text">{state.blindBox.stars}</span>
           </span>
         </div>
-        <div className="h-8 w-px bg-line" />
+        <div className="h-8 w-px bg-border" />
         <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-coralSoft text-coralInk"><Icon name="gift" size={19} /></span>
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-peachSoft text-peachStrong"><Icon name="gift" size={19} /></span>
           <span>
-            <span className="block text-xs text-muted">碎片</span>
-            <span className="block text-lg font-bold text-ink">{state.blindBox.fragments}/10</span>
+            <span className="block text-xs text-textMuted">碎片</span>
+            <span className="block text-lg font-bold text-text">{state.blindBox.fragments}/10</span>
           </span>
         </div>
       </section>
 
       <section className="card-important space-y-4 text-center">
-        <div className="relative mx-auto grid h-36 w-36 place-items-center rounded-[32px] bg-avocadoSoft">
-          <span className="absolute inset-3 rounded-[26px] border border-dashed border-avocado/50" />
-          <Icon name="gift" size={64} className={`relative text-avocadoInk ${pulling ? 'animate-shake' : 'animate-idle'}`} />
-          {hasUnseen() && (
-            <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-coral ring-2 ring-white" />
-          )}
+        <div className="relative mx-auto grid h-36 w-36 place-items-center rounded-[32px] bg-greenSoft">
+          <span className="absolute inset-3 rounded-[26px] border border-dashed border-primary/50" />
+          <Icon name="gift" size={64} className={`relative text-primary ${pulling ? 'animate-shake' : 'animate-idle'}`} />
         </div>
         <div>
-          <p className="text-base font-semibold text-ink">{pulling ? '正在拆开…' : '今天要拆哪一盒？'}</p>
+          <p className="text-base font-semibold text-text">{pulling ? '正在拆开…' : '今天要拆哪一盒？'}</p>
           <p className="muted mt-1">重复款会变成碎片，碎片能换指定礼物。</p>
         </div>
-        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-warm p-1">
+        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-surface p-1">
           {(['normal', 'limited'] as BlindBoxPool[]).map((item) => (
             <button
               key={item}
               onClick={() => choosePool(item)}
               className={`rounded-2xl py-2 text-xs transition-colors active:scale-95 ${
-                pool === item ? 'bg-white font-semibold text-avocadoInk shadow-card' : 'text-muted'
+                pool === item ? 'bg-card font-semibold text-primary shadow-card' : 'text-textMuted'
               }`}
             >
               {item === 'normal' ? '日常盒' : limitedUnlocked ? '限定盒' : '限定盒 · 未解锁'}
@@ -131,19 +128,19 @@ export default function StarBoxPage() {
             十连 · 45 星
           </button>
         </div>
-        <Link to="/record" className="block text-xs text-avocadoInk underline">星星不够？去记录一餐</Link>
+        <Link to="/record" className="block text-xs text-primary underline">星星不够？去记录一餐</Link>
       </section>
 
       <section className="card space-y-3">
         <h2 className="section-title">这一盒里有什么</h2>
         <div className="space-y-2">
           {probabilities.map((item) => (
-            <div key={item.rarity} className="flex items-center gap-3 rounded-2xl bg-warm px-3 py-2.5">
-              <span className="text-xs font-medium text-ink">{rarityLabel[item.rarity]}</span>
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white">
-                <div className="h-full rounded-full bg-avocado" style={{ width: `${item.percent}%` }} />
+            <div key={item.rarity} className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2.5">
+              <span className="text-xs font-medium text-text">{rarityLabel[item.rarity]}</span>
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-card">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${item.percent}%` }} />
               </div>
-              <span className="w-16 text-right text-[11px] text-muted">{item.count} 款 · {item.percent}%</span>
+              <span className="w-16 text-right text-[11px] text-textMuted">{item.count} 款 · {item.percent}%</span>
             </div>
           ))}
         </div>
@@ -155,13 +152,13 @@ export default function StarBoxPage() {
       <section className="card space-y-3">
         <h2 className="section-title">最近收到的星星</h2>
         {state.starLedger.length === 0 ? (
-          <p className="py-3 text-center text-xs text-muted">还没有记录，今天从一颗星开始吧。</p>
+          <p className="py-3 text-center text-xs text-textMuted">还没有记录，今天从一颗星开始吧。</p>
         ) : (
           <div className="space-y-2">
             {state.starLedger.slice(0, 4).map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between rounded-2xl bg-warm px-3 py-2.5 text-xs">
-                <span className="text-ink/80">{entry.reason}</span>
-                <span className="font-semibold text-avocadoInk">+{entry.amount}</span>
+              <div key={entry.id} className="flex items-center justify-between rounded-2xl bg-surface px-3 py-2.5 text-xs">
+                <span className="text-text/80">{entry.reason}</span>
+                <span className="font-semibold text-primary">+{entry.amount}</span>
               </div>
             ))}
           </div>
@@ -174,12 +171,12 @@ export default function StarBoxPage() {
           <select
             value={exchangeTarget}
             onChange={(e) => setExchangeTarget(e.target.value)}
-            className="w-full rounded-2xl bg-warm px-3 py-2.5 text-sm text-ink outline-none"
+            className="w-full rounded-2xl bg-surface px-3 py-2.5 text-sm text-text outline-none"
           >
             <option value="">选一个想要的礼物</option>
             {exchangeable.map((item) => <option key={item.id} value={item.id}>{item.emoji} {item.name}</option>)}
           </select>
-          {exchangeable.length === 0 && <p className="text-xs text-muted">这一盒已经收齐啦，去另一盒看看。</p>}
+          {exchangeable.length === 0 && <p className="text-xs text-textMuted">这一盒已经收齐啦，去另一盒看看。</p>}
           <button onClick={exchange} className="btn-primary w-full">用 10 个碎片兑换</button>
         </div>
       </Modal>
