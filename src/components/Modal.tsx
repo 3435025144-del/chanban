@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import Icon from './Icon';
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   children: ReactNode;
   dismissOnMask?: boolean;
   showClose?: boolean;
+  z?: string;
 }
 
 export default function Modal({
@@ -17,10 +18,18 @@ export default function Modal({
   children,
   dismissOnMask = false,
   showClose = true,
+  z = 'z-[60]',
 }: Props) {
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previous; };
+  }, [open]);
+
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div className={`fixed inset-0 ${z} flex items-center justify-center p-4`} role="dialog" aria-modal="true">
       <div
         className="absolute inset-0 bg-text/35"
         onClick={dismissOnMask ? onClose : undefined}

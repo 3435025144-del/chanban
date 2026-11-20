@@ -17,37 +17,42 @@ a:active,
 }
 
 :root {
+  /* 页面浅绿灰、主卡纯白、分组底色浅绿灰 */
   --c-page: 244 247 240;
-  --c-surface: 248 250 245;
-  --c-card: 255 254 249;
-  --c-text: 39 52 45;
-  --c-text-muted: 112 120 114;
-  --c-border: 228 233 223;
+  --c-surface: 237 243 234;
+  --c-card: 255 255 255;
+  --c-text: 33 48 39;
+  --c-text-muted: 102 113 104;
+  --c-text-faint: 126 136 127;
+  --c-border: 221 230 220;
 
-  --c-primary: 79 115 81;
-  --c-primary-text: 255 254 249;
-  --c-green-soft: 221 235 203;
-  --c-green-text: 64 95 65;
+  /* 主操作绿 / 深绿：统一为海松绿 #2D6B58 */
+  --c-primary: 45 107 88;
+  --c-primary-deep: 45 107 88;
+  --c-primary-text: 255 255 255;
+  --c-green-soft: 221 235 205;
+  --c-green-text: 45 107 88;
 
-  --c-cyan: 166 222 233;
-  --c-cyan-soft: 225 242 245;
-  --c-cyan-text: 74 128 138;
+  --c-cyan: 220 238 245;
+  --c-cyan-soft: 220 238 245;
+  --c-cyan-text: 79 120 135;
 
-  --c-yellow: 255 231 137;
-  --c-yellow-soft: 255 241 184;
-  --c-yellow-text: 110 87 33;
+  --c-yellow: 255 243 201;
+  --c-yellow-soft: 255 243 201;
+  --c-yellow-text: 117 97 38;
 
-  --c-peach: 240 173 145;
-  --c-peach-soft: 247 231 223;
-  --c-peach-text: 146 94 75;
-  --c-peach-strong: 198 109 82;
+  --c-peach: 248 227 220;
+  --c-peach-soft: 248 227 220;
+  --c-peach-text: 141 89 71;
+  --c-peach-strong: 233 128 97;
+  --c-warn: 181 106 76;
 
   --c-avatar-pink: 241 215 219;
   --c-avatar-pink-soft: 243 217 220;
-  --c-nav-inactive: 123 129 123;
-  --c-calendar-cell: 243 246 238;
-  --c-dot-green: 109 161 139;
-  --c-dot-warm: 232 148 120;
+  --c-nav-inactive: 107 117 109;
+  --c-calendar-cell: 237 243 234;
+  --c-dot-green: 45 107 88;
+  --c-dot-warm: 233 128 97;
 
   --color-page: rgb(var(--c-page));
   --color-surface: rgb(var(--c-surface));
@@ -58,8 +63,8 @@ a:active,
   --color-yellow-soft: rgb(var(--c-yellow-soft));
   --color-peach-soft: rgb(var(--c-peach-soft));
 
-  --shadow-card: 0 12px 30px rgba(54, 73, 58, 0.065);
-  --shadow-modal: 0 18px 44px rgba(54, 73, 58, 0.12);
+  --shadow-card: 0 10px 28px rgba(34, 52, 39, 0.06);
+  --shadow-modal: 0 16px 40px rgba(34, 52, 39, 0.12);
   --mask-solid: rgb(var(--c-text));
 
   font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei UI', sans-serif;
@@ -71,6 +76,12 @@ a:active,
 
 * { -webkit-tap-highlight-color: transparent; }
 html, body, #root { min-height: 100%; }
+
+#root {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+}
 
 body {
   margin: 0;
@@ -98,7 +109,7 @@ body {
     box-shadow: var(--shadow-card);
   }
   .chip {
-    @apply rounded-[11px] px-3.5 py-2 text-[13px] ring-1 ring-border transition-colors duration-150 select-none;
+    @apply rounded-[12px] px-3.5 py-2 text-[13px] transition-colors duration-150 select-none;
   }
   .tap-bounce {
     -webkit-tap-highlight-color: transparent;
@@ -120,13 +131,13 @@ body {
     transition-duration: 120ms;
   }
   .btn-primary {
-    @apply min-h-[46px] rounded-[14px] bg-primary px-5 py-3 text-[15px] font-semibold text-primaryText ring-1 ring-primary transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-border disabled:text-textMuted disabled:ring-border disabled:cursor-not-allowed;
+    @apply min-h-[46px] rounded-[14px] bg-primary px-5 py-3 text-[15px] font-semibold text-primaryText shadow-card transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-surface disabled:text-textMuted disabled:cursor-not-allowed disabled:shadow-none;
   }
   .btn-reward {
-    @apply min-h-[46px] rounded-[14px] bg-yellowSoft px-5 py-3 text-[15px] font-semibold text-yellowText ring-1 ring-yellow transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-border disabled:text-textMuted disabled:ring-border disabled:cursor-not-allowed;
+    @apply min-h-[46px] rounded-[14px] bg-peachSoft px-5 py-3 text-[15px] font-semibold text-peachStrong shadow-card transition-all duration-150 hover:brightness-95 active:scale-[0.98] disabled:bg-surface disabled:text-textMuted disabled:cursor-not-allowed disabled:shadow-none;
   }
   .btn-secondary {
-    @apply min-h-[46px] rounded-[14px] bg-card px-5 py-3 text-[14px] font-medium text-text ring-1 ring-border transition-all duration-150 hover:bg-surface active:scale-[0.98] disabled:bg-border disabled:text-textMuted disabled:cursor-not-allowed;
+    @apply min-h-[46px] rounded-[14px] border border-border bg-card px-5 py-3 text-[14px] font-semibold text-text shadow-card transition-all duration-150 hover:bg-surface active:scale-[0.98] disabled:bg-surface disabled:text-textFaint disabled:cursor-not-allowed disabled:shadow-none;
   }
   .icon-btn {
     @apply grid h-10 w-10 place-items-center rounded-2xl text-textMuted transition-colors hover:bg-surface hover:text-text active:scale-95;
@@ -208,3 +219,40 @@ body {
   100% { transform: translateY(-26px); opacity: 0; }
 }
 .animate-float-up { animation: float-up 1.5s ease-out forwards; }
+
+@keyframes photo-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5px) scale(1.035); }
+}
+.animate-photo-float { animation: photo-float 2.8s ease-in-out infinite; }
+
+.btn-deep {
+  @apply min-h-[46px] rounded-[14px] bg-primaryDeep px-5 py-3 text-[13px] font-bold text-primaryText shadow-card transition-all duration-200 hover:brightness-95 active:scale-[0.98] disabled:bg-surface disabled:text-textMuted disabled:cursor-not-allowed disabled:shadow-none;
+}
+
+.eat-page {
+  --c-text: 36 51 42;
+  --c-text-muted: 115 128 120;
+  color: rgb(var(--c-text));
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in { animation: fade-in 0.28s ease-out both; }
+
+@keyframes detail-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-detail-in { animation: detail-in 0.3s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
