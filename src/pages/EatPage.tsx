@@ -165,11 +165,11 @@ export default function EatPage() {
   };
 
   const switchMode = (next: Mode) => {
-    if (next === mode) return;
+    if (next === mode && (next !== 'find' || findWay === 'delivery')) return;
     resetSelection();
     setSheetOpen(false);
     setMode(next);
-    setFindWay(null);
+    setFindWay(next === 'find' ? 'delivery' : null);
     setQuery('');
     setCategory('全部');
     setSortBy('calories');
