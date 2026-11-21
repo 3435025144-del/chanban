@@ -1,3 +1,12 @@
+import {
+  accessoryOptions,
+  actionOptions,
+  backgroundOptions,
+  bottomOptions,
+  hairOptions,
+  outfitOptions,
+  shoesOptions,
+} from './avatarOptions';
 import type { AvatarConfig, BlindBoxItemType, BlindBoxPool } from '../types';
 
 export interface BlindBoxItem {
@@ -12,7 +21,7 @@ export interface BlindBoxItem {
   source: '星盒抽取' | '碎片兑换' | '成长奖励';
 }
 
-export const blindBoxItems: BlindBoxItem[] = [
+const baseBlindBoxItems: BlindBoxItem[] = [
   { id: 'ponytail', name: '元气马尾', type: 'hair', pool: 'normal', rarity: 'common', emoji: '🎀', desc: '跑起来会甩呀甩的发型。', series: '日常', source: '星盒抽取' },
   { id: 'stripe', name: '海盐条纹衫', type: 'outfit', pool: 'normal', rarity: 'common', emoji: '👕', desc: '像海风一样清爽的日常款。', series: '日常', source: '星盒抽取' },
   { id: 'glasses', name: '圆框眼镜', type: 'accessory', pool: 'normal', rarity: 'common', emoji: '👓', desc: '戴上立刻显得很有学问。', series: '日常', source: '星盒抽取' },
@@ -36,6 +45,37 @@ export const blindBoxItems: BlindBoxItem[] = [
   { id: 'cloud', name: '棉花糖云端', type: 'background', pool: 'limited', rarity: 'epic', emoji: '☁️', desc: '限定款，踩上去软软的。', series: '夜色', source: '星盒抽取' },
   { id: 'lookLazy', name: '慵懒出门', type: 'look', pool: 'limited', rarity: 'epic', emoji: '🧺', desc: '一整套穿好就出门。', series: '慢享', source: '星盒抽取' },
   { id: 'lookBerry', name: '莓果散步', type: 'look', pool: 'limited', rarity: 'epic', emoji: '🍓', desc: '粉粉嫩嫩的一身。', series: '草莓日', source: '星盒抽取' },
+];
+
+const wardrobeSources: { options: { id: string; label: string }[]; type: BlindBoxItemType; emoji: string }[] = [
+  { options: outfitOptions, type: 'outfit', emoji: '👕' },
+  { options: bottomOptions, type: 'bottom', emoji: '🩳' },
+  { options: shoesOptions, type: 'shoes', emoji: '👟' },
+  { options: hairOptions.filter((option) => option.id !== 'none'), type: 'hair', emoji: '💇' },
+  { options: accessoryOptions.filter((option) => option.id !== 'none'), type: 'accessory', emoji: '🎀' },
+  { options: backgroundOptions, type: 'background', emoji: '🌈' },
+  { options: actionOptions.filter((option) => option.id !== 'none'), type: 'action', emoji: '✨' },
+];
+
+const generatedBlindBoxItems: BlindBoxItem[] = wardrobeSources.flatMap(({ options, type, emoji }) =>
+  options.map((option) => ({
+    id: option.id,
+    name: option.label,
+    type,
+    pool: 'normal',
+    rarity: 'common',
+    emoji,
+    desc: `星星盒里的小惊喜：${option.label}。`,
+    series: '衣柜',
+    source: '星盒抽取',
+  })),
+);
+
+const baseIds = new Set(baseBlindBoxItems.map((item) => item.id));
+
+export const blindBoxItems: BlindBoxItem[] = [
+  ...baseBlindBoxItems,
+  ...generatedBlindBoxItems.filter((item) => !baseIds.has(item.id)),
 ];
 
 export interface LookPreset {

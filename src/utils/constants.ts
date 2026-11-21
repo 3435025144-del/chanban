@@ -18,6 +18,14 @@ export const DEFAULT_EQUIPPED = {
   action: 'none',
 };
 
+export const DEFAULT_UNLOCKED_ITEMS = [
+  'teeCoral', 'hoodie',
+  'shortsMix', 'shortsNavy',
+  'sneaker', 'boots',
+  'bob', 'ponytail',
+  'glasses', 'bow',
+];
+
 export function emptyDayLog(date: string): DayLog {
   return { date, records: [], isCheatDay: false, cravingResisted: 0 };
 }
@@ -30,7 +38,7 @@ export function initialState(): AppState {
       mood: '开心',
       equipped: { ...DEFAULT_EQUIPPED },
     },
-    blindBox: { stars: 3, fragments: 0, ownedItems: [] },
+    blindBox: { stars: 12, fragments: 0, ownedItems: [...DEFAULT_UNLOCKED_ITEMS] },
     logs: {},
     skippedMealsByDate: {},
     calorieGoal: 1500,
@@ -75,7 +83,7 @@ export function initialState(): AppState {
     hamsterDecorEquipped: 'none',
     age: undefined,
     activityLevel: '轻度活动',
-    appearanceVersion: 2,
+    appearanceVersion: 3,
   };
 }
 
@@ -94,6 +102,14 @@ export function loadState(): AppState {
     if (version < 2) {
       equipped.hair = 'bob';
       equipped.outfit = 'hoodie';
+    }
+    if (version < 3) {
+      (['outfit', 'bottom', 'shoes', 'hair', 'accessory', 'background', 'action'] as const).forEach((field) => {
+        const value = equipped[field];
+        if (value && value !== 'none' && !base.blindBox.ownedItems.includes(value)) {
+          (equipped as Record<string, unknown>)[field] = (base.avatar.equipped as Record<string, unknown>)[field];
+        }
+      });
     }
 
     let waterLogs = parsed.waterLogs ?? [];
@@ -132,7 +148,13 @@ export function loadState(): AppState {
       ...base,
       ...parsed,
       avatar: { ...base.avatar, ...parsed.avatar, equipped },
-      blindBox: { ...base.blindBox, ...parsed.blindBox },
+      blindBox: {
+        ...base.blindBox,
+        ...parsed.blindBox,
+        ownedItems: version < 3
+          ? [...base.blindBox.ownedItems]
+          : Array.from(new Set([...base.blindBox.ownedItems, ...(parsed.blindBox?.ownedItems ?? [])])),
+      },
       logs: parsed.logs ?? {},
       skippedMealsByDate: parsed.skippedMealsByDate ?? {},
       photoTimeline: parsed.photoTimeline ?? [],
@@ -159,7 +181,7 @@ export function loadState(): AppState {
       moodLogs: parsed.moodLogs ?? {},
       tasteProfile,
       activeCaloriesByDate: parsed.activeCaloriesByDate ?? {},
-      unseenItems: parsed.unseenItems ?? [],
+      unseenItems: version < 3 ? [] : (parsed.unseenItems ?? []),
       lastBoxResult: parsed.lastBoxResult ?? null,
       lastBoxNewItemId: parsed.lastBoxNewItemId,
       favoriteLooks: parsed.favoriteLooks ?? [],
@@ -173,7 +195,7 @@ export function loadState(): AppState {
       hamsterDecorEquipped: parsed.hamsterDecorEquipped ?? base.hamsterDecorEquipped,
       age: parsed.age,
       activityLevel: parsed.activityLevel ?? base.activityLevel,
-      appearanceVersion: 2,
+      appearanceVersion: 3,
     };
   } catch {
     return initialState();

@@ -34,6 +34,7 @@ export interface FoodRecord {
   carbs?: number;
   fat?: number;
   source: 'photo' | 'manual' | 'eat';
+  imageDataUrl?: string;
   mealType?: MealType;
   time?: string;
   amount?: number;

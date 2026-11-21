@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 export type IconName =
-  | 'home' | 'eat' | 'record' | 'avatar' | 'user'
+  | 'home' | 'eat' | 'record' | 'avatar' | 'user' | 'users'
   | 'back' | 'close' | 'check' | 'plus' | 'chevronDown' | 'chevronLeft' | 'chevronRight'
   | 'camera' | 'search' | 'cup' | 'walk' | 'gift' | 'hanger' | 'calendar'
   | 'edit' | 'trash' | 'arrowRight' | 'sparkle' | 'wallet' | 'clock' | 'chart'
@@ -20,8 +20,9 @@ export default function Icon({ name, size = 22, className = '', strokeWidth = 1.
     home: <><path d="M4 10.5 12 4l8 6.5V20H4z" /><path d="M9.5 20v-6h5v6" /></>,
     eat: <><path d="M7 3v8a2 2 0 0 0 4 0V3" /><path d="M9 3v18" /><path d="M17 3c-2 2-3 5-3 9h5V3z" /><path d="M16.5 12v9" /></>,
     record: <><rect x="4" y="5" width="16" height="14" rx="3" /><path d="M8 10h8M8 14h5" /></>,
-    avatar: <><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.8-4 3.5-6 7-6s6.2 2 7 6" /></>,
+    avatar: <><circle cx="12" cy="10.5" r="2" /><ellipse cx="7.3" cy="7.5" rx="1.5" ry="1.9" /><ellipse cx="12" cy="5.6" rx="1.5" ry="1.9" /><ellipse cx="16.7" cy="7.5" rx="1.5" ry="1.9" /><path d="M9.6 14.3c-.9 1-1.9 1.3-2.9 1-1-.3-1.4.4-1.1 1.4.5 1.6 2.2 2.6 4.2 2.6 2.8 0 4.6-1.6 5.5-3.6.5-1-.1-1.7-1.1-1.4-1 .3-2-.1-2.9-1" /></>,
     user: <><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.8-4 3.5-6 7-6s6.2 2 7 6" /></>,
+    users: <><circle cx="9" cy="8" r="3" /><path d="M3 19c.6-3.2 2.8-5 6-5s5.4 1.8 6 5" /><circle cx="17" cy="9" r="2.2" /><path d="M15 14c2.6-.3 4.6 1.3 5 4" /></>,
     back: <path d="M15 5 8 12l7 7" />,
     close: <path d="M6 6 18 18M18 6 6 18" />,
     check: <path d="m5 12 4.5 4.5L19 7" />,

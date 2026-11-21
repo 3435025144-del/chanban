@@ -4,13 +4,34 @@ import Avatar from '../components/Avatar';
 import Icon from '../components/Icon';
 import SubPageHeader from '../components/SubPageHeader';
 import { useApp } from '../context/AppContext';
+import { DEFAULT_EQUIPPED } from '../utils/constants';
+import {
+  accessoryOptions,
+  actionOptions,
+  backgroundOptions,
+  bottomOptions,
+  hairOptions,
+  outfitOptions,
+  shoesOptions,
+} from '../data/avatarOptions';
 import { blindBoxItems } from '../data/blindBoxItems';
 import type { AvatarConfig, BlindBoxItemType } from '../types';
-import { itemMeta } from '../utils/itemMeta';
+import { itemMeta, typeIcon } from '../utils/itemMeta';
 
-type Category = 'hair' | 'outfit' | 'bottom' | 'shoes' | 'accessory' | 'hamster';
+type Category = 'hair' | 'outfit' | 'bottom' | 'shoes' | 'accessory' | 'background' | 'action' | 'hamster';
 
-const BASE_UNLOCKED = ['bob', 'hoodie', 'shortsMix', 'sneaker'];
+interface WardrobeItem { id: string; name: string; type: BlindBoxItemType; field?: keyof AvatarConfig; emoji: string }
+
+const categories: { id: Category; label: string }[] = [
+  { id: 'outfit', label: '上衣' },
+  { id: 'bottom', label: '下装' },
+  { id: 'shoes', label: '鞋子' },
+  { id: 'hair', label: '发型' },
+  { id: 'accessory', label: '配饰' },
+  { id: 'background', label: '场景' },
+  { id: 'action', label: '动作' },
+  { id: 'hamster', label: '鼠鼠装饰' },
+];
 
 const hamsterDecor = [
   { id: 'hat', name: '小礼帽', emoji: '🎩', cost: 5 },
@@ -19,48 +40,65 @@ const hamsterDecor = [
   { id: 'toy', name: '小摆件', emoji: '🏺', cost: 5 },
 ];
 
-const categories: { id: Category; label: string }[] = [
-  { id: 'hair', label: '发型' },
-  { id: 'outfit', label: '上衣' },
-  { id: 'bottom', label: '下装' },
-  { id: 'shoes', label: '鞋子' },
-  { id: 'accessory', label: '配饰' },
-  { id: 'hamster', label: '仓鼠装饰' },
+const baseItems: WardrobeItem[] = [
+  ...outfitOptions.map((o) => ({ id: o.id, name: o.label, type: 'outfit' as const, field: 'outfit' as const, emoji: '👕' })),
+  ...bottomOptions.map((o) => ({ id: o.id, name: o.label, type: 'bottom' as const, field: 'bottom' as const, emoji: '🩳' })),
+  ...shoesOptions.map((o) => ({ id: o.id, name: o.label, type: 'shoes' as const, field: 'shoes' as const, emoji: '👟' })),
+  ...hairOptions.filter((o) => o.id !== 'none').map((o) => ({ id: o.id, name: o.label, type: 'hair' as const, field: 'hair' as const, emoji: '💇' })),
+  ...accessoryOptions.filter((o) => o.id !== 'none').map((o) => ({ id: o.id, name: o.label, type: 'accessory' as const, field: 'accessory' as const, emoji: '🎀' })),
+  ...backgroundOptions.map((o) => ({ id: o.id, name: o.label, type: 'background' as const, field: 'background' as const, emoji: '🌈' })),
+  ...actionOptions.filter((o) => o.id !== 'none').map((o) => ({ id: o.id, name: o.label, type: 'action' as const, field: 'action' as const, emoji: '✨' })),
 ];
+
+const emojiFor = (item: WardrobeItem) => item.emoji || itemMeta(item.id).emoji;
+
+const equipFields = ['outfit', 'bottom', 'shoes', 'hair', 'accessory', 'background', 'action'] as const;
+
+function sanitizeEquipped(config: AvatarConfig, owned: string[]): AvatarConfig {
+  const next = { ...config };
+  equipFields.forEach((field) => {
+    const value = next[field];
+    if (value && value !== 'none' && !owned.includes(value)) {
+      (next as Record<string, unknown>)[field] = (DEFAULT_EQUIPPED as Record<string, unknown>)[field];
+    }
+  });
+  return next;
+}
 
 export default function WardrobePage() {
   const { state, dispatch, notify } = useApp();
   const navigate = useNavigate();
   const [category, setCategory] = useState<Category>('outfit');
-  const [draft, setDraft] = useState<AvatarConfig>(state.avatar.equipped);
+  const [draft, setDraft] = useState<AvatarConfig>(() => sanitizeEquipped(state.avatar.equipped, state.blindBox.ownedItems));
 
-  const owned = state.blindBox.ownedItems;
-  const pool = useMemo(() => blindBoxItems.filter((item) => item.type === category), [category]);
   const items = useMemo(() => {
+    const special = blindBoxItems
+      .filter((b) => b.type === category || (b.type === 'look' && category === 'outfit'))
+      .map((b) => ({ id: b.id, name: b.name, type: b.type, field: itemMeta(b.id).field, emoji: b.emoji }));
+    const base = baseItems.filter((item) => item.type === category);
     const seen = new Set<string>();
-    return pool.filter((item) => {
+    return [...special, ...base].filter((item) => {
       if (seen.has(item.id)) return false;
       seen.add(item.id);
       return true;
     });
-  }, [pool]);
+  }, [category]);
 
-  const isEquipped = (id: string) => {
-    const meta = itemMeta(id);
-    return !!meta.field && draft[meta.field] === id;
+  const isUnlocked = (item: WardrobeItem) => state.blindBox.ownedItems.includes(item.id);
+
+  const isEquipped = (item: WardrobeItem) => {
+    if (!item.field || !isUnlocked(item)) return false;
+    return (draft as Record<string, unknown>)[item.field] === item.id;
   };
 
-  const isUnlocked = (id: string) => owned.includes(id) || BASE_UNLOCKED.includes(id);
-
-  const tryOn = (id: string) => {
-    if (!isUnlocked(id)) {
-      notify('这件还没解锁，去星星盒碰碰运气吧');
+  const tryOn = (item: WardrobeItem) => {
+    if (!isUnlocked(item)) {
+      notify('尚未解锁哦，去抽盲盒看看运气吧～');
       return;
     }
-    const field = itemMeta(id).field;
-    if (!field) return;
-    setDraft((current) => ({ ...current, [field]: id }));
-    notify(`已换上「${itemMeta(id).name}」`);
+    if (!item.field) { notify('这是一套整装，穿戴中请到分身里查看'); return; }
+    setDraft((current) => ({ ...current, [item.field]: item.id }));
+    notify(`已换上「${item.name}」`);
   };
 
   const save = () => {
@@ -71,8 +109,8 @@ export default function WardrobePage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col px-4 pb-28 pt-6">
-      <SubPageHeader title="衣帽间" subtitle="点一下就能试穿" backTo="/avatar" />
+    <div className="flex min-h-screen flex-col px-4 pb-40 pt-6">
+      <SubPageHeader title="衣帽间" subtitle="已解锁的随便穿，未解锁的去星星盒碰运气" backTo="/avatar" />
 
       <section className="flex flex-col items-center justify-center rounded-[24px] bg-card p-3 shadow-card">
         <div className="w-full overflow-hidden rounded-[20px]">
@@ -101,7 +139,7 @@ export default function WardrobePage() {
               const equipped = state.hamsterDecorEquipped === item.id;
               return (
                 <div key={item.id} className={`flex flex-col items-center gap-2 rounded-[20px] p-3 shadow-card ${equipped ? 'bg-greenSoft' : 'bg-card'}`}>
-                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-surface text-2xl">{owned ? item.emoji : '🔒'}</span>
+                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-surface text-2xl">{item.emoji}</span>
                   <span className="w-full truncate text-center text-xs font-medium text-text">{item.name}</span>
                   <button
                     onClick={() => {
@@ -109,35 +147,38 @@ export default function WardrobePage() {
                       else if (state.blindBox.stars >= item.cost) dispatch({ type: 'BUY_HAMSTER_DECOR', id: item.id, cost: item.cost });
                       else notify('星星不够，先去赚几颗吧');
                     }}
-                    className={`chip w-full py-1.5 text-[11px] ${equipped ? 'bg-primary text-primaryText' : 'bg-surface text-text'}`}
+                    className={`chip w-full py-1.5 text-[11px] ${equipped ? 'bg-primary text-primaryText' : owned ? 'bg-surface text-text' : 'bg-yellowSoft text-text'}`}
                   >{equipped ? '✓ 已戴上' : owned ? '戴上' : `${item.cost} 星解锁`}</button>
                 </div>
               );
             })}
           </div>
         ) : (
-        <div className="grid grid-cols-3 gap-2">
-          {items.map((item) => {
-            const unlocked = isUnlocked(item.id);
-            const equipped = isEquipped(item.id);
-            return (
-              <button
-                key={item.id}
-                onClick={() => tryOn(item.id)}
-                className={`relative flex flex-col items-center gap-2 rounded-[20px] p-3 shadow-card transition-all active:scale-95 ${
-                  equipped ? 'ring-2 ring-primary bg-greenSoft' : unlocked ? 'bg-card' : 'bg-surface opacity-50'
-                }`}
-              >
-                {equipped && <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-primary text-primaryText"><Icon name="check" size={12} /></span>}
-                <span className={`relative grid h-14 w-14 place-items-center rounded-2xl text-2xl ${unlocked ? 'bg-surface' : 'bg-surface grayscale opacity-60'}`}>
-                  {unlocked ? item.emoji : '🔒'}
-                </span>
-                <span className="w-full truncate text-center text-xs font-medium text-text">{unlocked ? item.name : '未解锁'}</span>
-                <span className="muted">{unlocked ? (equipped ? '穿戴中' : '点击试穿') : '星星盒可得'}</span>
-              </button>
-            );
-          })}
-        </div>
+          <div className="grid grid-cols-3 gap-2">
+            {items.map((item) => {
+              const locked = !isUnlocked(item);
+              const equipped = isEquipped(item);
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => tryOn(item)}
+                  className={`relative flex flex-col items-center gap-2 rounded-[20px] p-3 shadow-card transition-all active:scale-95 ${
+                    equipped ? 'ring-2 ring-primary bg-greenSoft' : locked ? 'wardrobe-card-locked' : 'bg-card'
+                  }`}
+                >
+                  {equipped && <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-primary text-primaryText"><Icon name="check" size={12} /></span>}
+                  <span className={`relative grid h-14 w-14 place-items-center rounded-2xl ${locked ? 'wardrobe-locked-icon' : 'bg-surface text-2xl'}`}>
+                    {locked
+                      ? <Icon name={typeIcon(item.type)} size={30} strokeWidth={1.8} />
+                      : <span className="text-2xl">{emojiFor(item)}</span>}
+                    {locked && <span className="wardrobe-lock-badge">🔒</span>}
+                  </span>
+                  <span className="w-full truncate text-center text-xs font-medium text-text">{item.name}</span>
+                  <span className="muted">{equipped ? '穿戴中' : locked ? '盲盒可得' : '点击试穿'}</span>
+                </button>
+              );
+            })}
+          </div>
         )}
       </section>
 

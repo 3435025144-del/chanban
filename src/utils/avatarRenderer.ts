@@ -92,15 +92,21 @@ function outfitNode(
   skin: string,
 ): string {
   const long = ['hoodie', 'sports', 'coat'].includes(outfit.id);
-  const sleeve = long
-    ? `
-      <path d="M92 115 C78 119 71 135 70 157 L87 162 C89 144 96 133 106 126Z" fill="${outfit.color}" stroke="${INK}" stroke-width="2.2"/>
-      <path d="M148 115 C162 119 169 135 170 157 L153 162 C151 144 144 133 134 126Z" fill="${outfit.color}" stroke="${INK}" stroke-width="2.2"/>
-    `
-    : `
-      <path d="M92 114 C82 118 77 128 78 141 L95 145 C94 132 99 123 106 119Z" fill="${outfit.color}" stroke="${INK}" stroke-width="2.2"/>
-      <path d="M148 114 C158 118 163 128 162 141 L145 145 C146 132 141 123 134 119Z" fill="${outfit.color}" stroke="${INK}" stroke-width="2.2"/>
-    `;
+  const wave = config.action === 'wave';
+  const raisedSleeve = `
+    <path d="M148 116 C171 106 178 94 178 92" fill="none" stroke="${INK}" stroke-width="18" stroke-linecap="round"/>
+    <path d="M148 116 C171 106 178 94 178 92" fill="none" stroke="${outfit.color}" stroke-width="14" stroke-linecap="round"/>
+  `;
+  const sleeve = `
+    ${long
+      ? `<path d="M92 115 C78 119 71 135 70 157 L87 162 C89 144 96 133 106 126Z" fill="${outfit.color}" stroke="${INK}" stroke-width="2.2"/>`
+      : `<path d="M92 114 C82 118 77 128 78 141 L95 145 C94 132 99 123 106 119Z" fill="${outfit.color}" stroke="${INK}" stroke-width="2.2"/>`}
+    ${wave
+      ? raisedSleeve
+      : long
+        ? `<path d="M148 115 C162 119 169 135 170 157 L153 162 C151 144 144 133 134 126Z" fill="${outfit.color}" stroke="${INK}" stroke-width="2.2"/>`
+        : `<path d="M148 114 C158 118 163 128 162 141 L145 145 C146 132 141 123 134 119Z" fill="${outfit.color}" stroke="${INK}" stroke-width="2.2"/>`}
+  `;
   const torso = `
     <path d="M92 112 C104 104 136 104 148 112 L157 163 C139 174 101 174 83 163Z" fill="${outfit.color}" stroke="${INK}" stroke-width="2.4"/>
     <path d="M104 110 C109 121 131 121 136 110" fill="none" stroke="${INK_SOFT}" stroke-width="2"/>
@@ -152,7 +158,15 @@ function outfitNode(
       <circle cx="117" cy="141" r="1.3" fill="${INK_SOFT}"/><circle cx="123" cy="141" r="1.3" fill="${INK_SOFT}"/>
     `;
   }
-  return `${sleeve}${torso}${details}<circle cx="68" cy="159" r="7.5" fill="${skin}" stroke="${INK}" stroke-width="2"/><circle cx="172" cy="159" r="7.5" fill="${skin}" stroke="${INK}" stroke-width="2"/>`;
+  const leftHand = long
+    ? `<circle cx="68" cy="159" r="7.5" fill="${skin}" stroke="${INK}" stroke-width="2"/>`
+    : `<circle cx="78" cy="143" r="7.5" fill="${skin}" stroke="${INK}" stroke-width="2"/>`;
+  const rightHand = wave
+    ? `<circle cx="180" cy="89" r="7.5" fill="${skin}" stroke="${INK}" stroke-width="2"/>`
+    : long
+      ? `<circle cx="172" cy="159" r="7.5" fill="${skin}" stroke="${INK}" stroke-width="2"/>`
+      : `<circle cx="162" cy="143" r="7.5" fill="${skin}" stroke="${INK}" stroke-width="2"/>`;
+  return `${sleeve}${torso}${details}${leftHand}${rightHand}`;
 }
 
 function bottomNode(bottom: { id: string; color: string; accent: string }, skin: string): string {
@@ -272,6 +286,7 @@ export function renderAvatarSvg(config: AvatarConfig, size: number | string = 18
   const headRx = 35 * (face.rx / 47);
   const headRy = 34 * (face.ry / 49);
   const wave = config.action === 'wave';
+  const longSleeve = ['hoodie', 'sports', 'coat'].includes(outfit.id);
   const gradientId = `avatar-bg-${background.id}-${background.from.replace('#', '')}-${background.to.replace('#', '')}`;
 
   return `
@@ -284,8 +299,8 @@ export function renderAvatarSvg(config: AvatarConfig, size: number | string = 18
       <path d="M126 162 L139 162 L137 207 L123 207Z" fill="${skin.color}" stroke="${INK}" stroke-width="2"/>
       ${bottomNode(bottom, skin.color)}
       ${shoesNode(shoe, skin.color)}
-      <path d="M92 116 C75 ${wave ? 99 : 124} 71 140 69 157" fill="none" stroke="${skin.color}" stroke-width="13" stroke-linecap="round"/>
-      <path d="M148 116 C${wave ? '171 106 178 94 180 89' : '165 124 169 140 171 157'}" fill="none" stroke="${skin.color}" stroke-width="13" stroke-linecap="round"/>
+      <path d="M92 116 C${longSleeve ? '75 124 71 140 69 157' : '84 120 78 132 78 141'}" fill="none" stroke="${skin.color}" stroke-width="13" stroke-linecap="round"/>
+      <path d="M148 116 C${wave ? '171 106 178 94 180 89' : longSleeve ? '165 124 169 140 171 157' : '156 120 162 132 162 141'}" fill="none" stroke="${skin.color}" stroke-width="13" stroke-linecap="round"/>
       ${outfitNode(config, outfit, skin.color)}
       <rect x="111" y="101" width="18" height="17" rx="7" fill="${skin.color}" stroke="${INK}" stroke-width="1.8"/>
       <ellipse cx="${120 - headRx}" cy="82" rx="7" ry="10" fill="${skin.color}" stroke="${INK}" stroke-width="2"/>
