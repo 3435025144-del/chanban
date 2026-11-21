@@ -107,7 +107,7 @@ export function loadState(): AppState {
       (['outfit', 'bottom', 'shoes', 'hair', 'accessory', 'background', 'action'] as const).forEach((field) => {
         const value = equipped[field];
         if (value && value !== 'none' && !base.blindBox.ownedItems.includes(value)) {
-          (equipped as Record<string, unknown>)[field] = (base.avatar.equipped as Record<string, unknown>)[field];
+          (equipped as unknown as Record<string, unknown>)[field] = (base.avatar.equipped as unknown as Record<string, unknown>)[field];
         }
       });
     }

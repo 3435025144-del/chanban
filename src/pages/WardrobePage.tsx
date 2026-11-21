@@ -59,7 +59,7 @@ function sanitizeEquipped(config: AvatarConfig, owned: string[]): AvatarConfig {
   equipFields.forEach((field) => {
     const value = next[field];
     if (value && value !== 'none' && !owned.includes(value)) {
-      (next as Record<string, unknown>)[field] = (DEFAULT_EQUIPPED as Record<string, unknown>)[field];
+      (next as unknown as Record<string, unknown>)[field] = (DEFAULT_EQUIPPED as unknown as Record<string, unknown>)[field];
     }
   });
   return next;
@@ -88,7 +88,7 @@ export default function WardrobePage() {
 
   const isEquipped = (item: WardrobeItem) => {
     if (!item.field || !isUnlocked(item)) return false;
-    return (draft as Record<string, unknown>)[item.field] === item.id;
+    return (draft as unknown as Record<string, unknown>)[item.field] === item.id;
   };
 
   const tryOn = (item: WardrobeItem) => {
@@ -96,8 +96,9 @@ export default function WardrobePage() {
       notify('尚未解锁哦，去抽盲盒看看运气吧～');
       return;
     }
-    if (!item.field) { notify('这是一套整装，穿戴中请到分身里查看'); return; }
-    setDraft((current) => ({ ...current, [item.field]: item.id }));
+    const field = item.field;
+    if (!field) { notify('这是一套整装，穿戴中请到分身里查看'); return; }
+    setDraft((current) => ({ ...current, [field]: item.id }));
     notify(`已换上「${item.name}」`);
   };
 
